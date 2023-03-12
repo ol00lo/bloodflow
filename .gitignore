@@ -1,0 +1,12 @@
+~*
+*.swp
+*.aux
+*.backup
+*.toc
+*.bbl
+*.blg
+*.log
+*.out
+*.brf
+*.pdf
+build/

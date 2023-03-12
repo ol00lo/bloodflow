@@ -1,0 +1,36 @@
+1. Автоматическая нумерация формул
+==================================
+
+- ставим label в формулу
+
+\begin{equation}
+	\label{eq:mass-balance}
+	\frac{\partial A}{\partial t}+\frac{\partial Au}{\partial x}=f_A,
+\end{equation}
+
+- используем в тексте:
+
+(\ref{eq:mass-balance})
+
+2. Использование bibtex для литературы
+======================================
+
+- Файл refs.bib
+Вставляем туда bibtex-ссылки. По современным источникам эту bibtex ссылку можно найти в гугле по doi.
+Если не получается, пишем такую штуку сами.
+walburn:1976 -- это метка, которую мы поставили сами и которую будем использовать при цитировании.
+
+
+@article{walburn:1976,
+	author = {Walburn, F. J. and Schneck, D. J.},
+	title = {A constitutive equation for whole human blood},
+	journal = {Biorheology},
+	volume = {13},
+	number = {3},
+	pages = {201--210},
+	doi = {https://doi.org/10.3233/bir-1976-13307},
+	year = {1976}
+}
+
+=== цитируем в тексте по метке
+\cite{walburn:1976}
