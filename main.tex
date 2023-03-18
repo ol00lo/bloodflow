@@ -8,7 +8,10 @@
 \usepackage[T1, T2A]{fontenc}
 \usepackage[english, russian]{babel}
 \usepackage[left=2cm,right=2cm, top=2cm, bottom=2cm]{geometry}
-\bibliographystyle{plain}
+% Литература в biblatex
+\usepackage[backend=biber,bibencoding=utf8,language=auto,autolang=other,sorting=ntvy,babel=other,
+            maxbibnames=99,maxcitenames=2,style=gost-numeric,movenames=false]{biblatex}
+\addbibresource{refs.bib}
 % Межстрочный интервал = 1.5pt
 \usepackage{setspace}
 \onehalfspacing
@@ -17,6 +20,18 @@
 \setlength\parindent{12.5mm}
 % Путь до папки с изображениями
 \graphicspath{ {./images/} }
+% Активные ссылки на формулы и лит-ру
+\usepackage[
+  colorlinks=true,
+  citecolor=blue,
+  linkcolor=blue,
+  linktoc=page,
+]{hyperref}
+% tilde symbol
+\usepackage{textcomp}
+\renewcommand{\texttilde}{\raisebox{0.5ex}{\texttildelow}}
+% Reynolds number
+\newcommand{\Ren}{\mathrm{Re}}
 
 
 \begin{document}
@@ -31,7 +46,6 @@
 \include{chapter2}
 
 \newpage
-\bibliography{refs}
-\addcontentsline{toc}{section}{Список литературы}
+\printbibliography
 
 \end{document}

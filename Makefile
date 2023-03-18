@@ -3,7 +3,7 @@ MAINFILE=main
 all:
 	pdflatex $(MAINFILE)
 bib:
-	bibtex ${MAINFILE}
+	biber ${MAINFILE}
 clean:
 	rm -f *.aux *.backup *.toc *.bbl *.blg *.log *.out *.brf
 cleanall: clean

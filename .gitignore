@@ -9,4 +9,6 @@
 *.out
 *.brf
 *.pdf
+*.bcf
+*.run.xml
 build/
