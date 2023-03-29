@@ -10,5 +10,8 @@
 *.brf
 *.pdf
 *.bcf
-*.run.xml
+*.run.*
+*.fdb_latexmk
+*.fls
+*.synctex.gz
 build/
