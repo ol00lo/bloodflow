@@ -331,3 +331,39 @@ $\Vec{\tau} =\partial \Vec{X}/\partial s^{-1}$ единичный касател
 соответствует 100\% просвету}
 \label{sc}
 \end{figure}
+
+
+\section{Вычислительный эксперимент}
+\subsection*{1}
+
+В одномерной модели вычислительная область разбивается на сегменты, соединенные друг с друг с другом в узлах. 
+Каждый сегмент моделируется как деформируемая трубка, свойства которой описываются одной осевой координатой x. 
+Учитываем так же силу трения зависящую от выбранного профиля скорости, который используется для оценки напряжения сдвига у стенки. 
+Профиль осевой скорости предполагается осесимметричным.
+Предполагается, что стенка сосуда непроницаема, а кровь - несжимаемая ньютоновская жидкость.
+
+Получаем систему:
+\begin{equation}
+    \label{sys_of_eq}
+    \begin{cases}
+        \frac{\partial A}{\partial t}+\frac{\partial Au}{\partial x}=0\\
+        \frac{\partial u}{\partial t}+U\frac{\partial u}{\partial x}+\frac{1}{\rho}\frac{\partial p}{\partial x}=\frac{f}{\rho A}\\
+        f=-2(\xi+2)\mu\pi U\\
+        p=\frac{4}{3}\sqrt{\pi}\frac{Eh}{A_0}(\sqrt{A}-\sqrt{A_0})
+    \end{cases}.
+    \end{equation}
+
+Для решения этой системы необходимо её обезразмерить. Положим ${U_0 t_0}/{x_0}=1$, $t_0$ находим из граничных условий, 
+$x_0$ из геометрических характеристик, $A_0$ из начальных условий/состояния покоя:
+
+\begin{equation}
+    \label{sys_of_eq1}
+    \begin{cases}
+        \frac{\partial A}{\partial t}+\frac{\partial Au}{\partial x}=0\\
+        \frac{\partial u}{\partial t}+\frac{1}{2}\frac{\partial u^2}{\partial x}-\frac{\partial p}{\partial x}+M_f \frac{u}{A}\\
+        p=M_p(\sqrt{A}-1).
+    \end{cases},
+    \end{equation}
+где $M_f=\frac{-2(\xi+2)\mu \pi t_0}{\rho A_0}$, $M_P=\frac{\frac{4}{3}\sqrt{\pi}Eh}{\rho U_0\sqrt{A_0}}(\sqrt{A}-1)$
+
+    

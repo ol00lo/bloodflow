@@ -23,6 +23,7 @@ endif()
 include_directories(${amgcl_SOURCE_DIR})
 
 include_directories(${CMAKE_SOURCE_DIR}/lib)
+include_directories(${CMAKE_SOURCE_DIR}/../../boost_1_80_0)
 set(BLOODFLOWLIB_TARGET bloodflow)
 
 add_subdirectory(lib)

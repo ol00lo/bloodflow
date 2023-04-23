@@ -1,6 +1,7 @@
 #ifndef COMMON_HPP
 #define COMMON_HPP
 
+#define _USE_MATH_DEFINES
 #include <algorithm>
 #include <iostream>
 #include <vector>
