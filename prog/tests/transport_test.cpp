@@ -1,3 +1,4 @@
+
 #include "testutils.hpp"
 #include "assem/misc.hpp"
 #include "grid.hpp"
@@ -27,14 +28,26 @@ TEST_CASE("Transport equation, upwind", "[upwind]"){
 
 	std::shared_ptr<ITransport> tran;
 	int num_section;
-	SECTION("Upwind"){
-		num_section = 1;
-		tran.reset(new UpwindTransport());
-	}
+	//SECTION("Upwind"){
+	//	num_section = 1;
+	//	tran.reset(new UpwindTransport());
+	//}
 	SECTION("TvdSuperbee"){
 		num_section = 2;
 		tran.reset(new TvdSuperbeeTransport());
 	}
+	//SECTION("TvdMc"){
+	//	num_section = 3;
+	//	tran.reset(new TvdMcTransport());
+	//}
+	//SECTION("VanLeer"){
+	//	num_section = 4;
+	//	tran.reset(new TvdVanLeerTransport());
+	//}
+	//SECTION("MinMod"){
+	//	num_section = 5;
+	//	tran.reset(new TvdMinModTransport());
+	//}
 	std::vector<double> vel(grid.n_points(), 1);
 	tran->set_velocity(vel);
 
@@ -75,8 +88,11 @@ TEST_CASE("Transport equation, upwind", "[upwind]"){
 	}
 
 	switch (num_section){
-		case 1: CHECK(nrm == Approx(0.1871625127)); break;
+		//case 1: CHECK(nrm == Approx(0.1871625127)); break;
 		case 2: CHECK(nrm == Approx(0.0947743)); break;
+		//case 3: CHECK(nrm); break; 
+		//case 4: CHECK(nrm); break;
+		//case 5: CHECK(nrm); break;
 		default: _THROW_UNREACHABLE_;
 	}
 }

@@ -10,6 +10,22 @@ double superbee(double r){
 	if (r<2)   return r;
 	return 2;
 }
+double mc(double r){
+	if (r<0)   return 0;
+	if (1<r<3) return (1+r)/2;
+	if (0<r<1)   return 2*r;
+	return 2;
+}
+double vanleer(double r){
+	if(r>0) return 2*r/(1+r);
+	if(r<=0) return 0;
+}
+double minmod(double r){
+	if (r<=0) return 0;
+	if (r<=1) return r;
+	if (r>1) return 1;
+}
+
 }
 
 void UpwindTransport::set_velocity(const std::vector<double>& vel){
@@ -61,6 +77,111 @@ std::vector<double> TvdSuperbeeTransport::compute_fluxes(const std::vector<doubl
 		} else {
 			flux_low = _velocity[right_point] * u[right_point];
 			phi = superbee(r[right_point]);
+		}
+		fluxes[i] = flux_low + phi*(flux_high - flux_low);
+	}
+	return fluxes;
+}
+
+void TvdMcTransport::set_velocity(const std::vector<double>& vel){
+	_velocity = vel;
+}
+
+std::vector<double> TvdMcTransport::compute_fluxes(const std::vector<double>& u) const{
+	size_t n_points = u.size();
+	size_t n_cells = u.size() - 1;
+
+	std::vector<double> r(n_points, 1);
+	for (size_t i=1; i<n_points-1; ++i){
+		double denum = u[i+1] - u[i];
+		if (denum == 0) denum = 1e-8;
+		r[i] = (u[i] - u[i-1])/denum;
+	}
+
+	std::vector<double> fluxes(n_cells, 0);
+	for (size_t i=0; i<n_cells; ++i){
+		size_t left_point = i;
+		size_t right_point = i+1;
+		double flux_high, flux_low, phi;
+		double check_v = 0.5*(_velocity[left_point] + _velocity[right_point]);
+
+		flux_high = 0.5*(_velocity[left_point] * u[left_point] + _velocity[right_point] * u[right_point]);
+		if (check_v >= 0){
+			flux_low = _velocity[left_point] * u[left_point];
+			phi = mc(r[left_point]);
+		} else {
+			flux_low = _velocity[right_point] * u[right_point];
+			phi = mc(r[right_point]);
+		}
+		fluxes[i] = flux_low + phi*(flux_high - flux_low);
+	}
+	return fluxes;
+}
+
+void TvdVanLeerTransport::set_velocity(const std::vector<double>& vel){
+	_velocity = vel;
+}
+
+std::vector<double> TvdVanLeerTransport::compute_fluxes(const std::vector<double>& u) const{
+	size_t n_points = u.size();
+	size_t n_cells = u.size() - 1;
+
+	std::vector<double> r(n_points, 1);
+	for (size_t i=1; i<n_points-1; ++i){
+		double denum = u[i+1] - u[i];
+		if (denum == 0) denum = 1e-8;
+		r[i] = (u[i] - u[i-1])/denum;
+	}
+
+	std::vector<double> fluxes(n_cells, 0);
+	for (size_t i=0; i<n_cells; ++i){
+		size_t left_point = i;
+		size_t right_point = i+1;
+		double flux_high, flux_low, phi;
+		double check_v = 0.5*(_velocity[left_point] + _velocity[right_point]);
+
+		flux_high = 0.5*(_velocity[left_point] * u[left_point] + _velocity[right_point] * u[right_point]);
+		if (check_v >= 0){
+			flux_low = _velocity[left_point] * u[left_point];
+			phi = vanleer(r[left_point]);
+		} else {
+			flux_low = _velocity[right_point] * u[right_point];
+			phi = vanleer(r[right_point]);
+		}
+		fluxes[i] = flux_low + phi*(flux_high - flux_low);
+	}
+	return fluxes;
+}
+
+void TvdMinModTransport::set_velocity(const std::vector<double>& vel){
+	_velocity = vel;
+}
+
+std::vector<double> TvdMinModTransport::compute_fluxes(const std::vector<double>& u) const{
+	size_t n_points = u.size();
+	size_t n_cells = u.size() - 1;
+
+	std::vector<double> r(n_points, 1);
+	for (size_t i=1; i<n_points-1; ++i){
+		double denum = u[i+1] - u[i];
+		if (denum == 0) denum = 1e-8;
+		r[i] = (u[i] - u[i-1])/denum;
+	}
+
+	std::vector<double> fluxes(n_cells, 0);
+	for (size_t i=0; i<n_cells; ++i){
+		size_t left_point = i;
+		size_t right_point = i+1;
+		double flux_high, flux_low, phi;
+		double check_v = 0.5*(_velocity[left_point] + _velocity[right_point]);
+
+		flux_high = 0.5*(_velocity[left_point] * u[left_point] + _velocity[right_point] * u[right_point]);
+		if (check_v >= 0){
+			flux_low = _velocity[left_point] * u[left_point];
+			phi = minmod(r[left_point]);
+		} else {
+			flux_low = _velocity[right_point] * u[right_point];
+			phi = minmod(r[right_point]);
 		}
 		fluxes[i] = flux_low + phi*(flux_high - flux_low);
 	}

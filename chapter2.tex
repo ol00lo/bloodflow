@@ -1,3 +1,4 @@
+
 \section{Подходы к моделированию кровотока}
 \subsection{Детальное моделирование}
 Моделировать кровь можно как жидкость со взвешенными в ней клетками крови, которые могут рассматриваться, как совокупность частиц и сил,
@@ -334,7 +335,7 @@ $\Vec{\tau} =\partial \Vec{X}/\partial s^{-1}$ единичный касател
 
 
 \section{Вычислительный эксперимент}
-\subsection*{1}
+\subsection*{Построение уравнения}
 
 В одномерной модели вычислительная область разбивается на сегменты, соединенные друг с друг с другом в узлах. 
 Каждый сегмент моделируется как деформируемая трубка, свойства которой описываются одной осевой координатой x. 
@@ -353,17 +354,98 @@ $\Vec{\tau} =\partial \Vec{X}/\partial s^{-1}$ единичный касател
     \end{cases}.
     \end{equation}
 
-Для решения этой системы необходимо её обезразмерить. Положим ${U_0 t_0}/{x_0}=1$, $t_0$ находим из граничных условий, 
+Проведем обезразмеривание. Положим ${U_0 t_0}/{x_0}=1$, $t_0$ находим из граничных условий, 
 $x_0$ из геометрических характеристик, $A_0$ из начальных условий/состояния покоя:
 
 \begin{equation}
     \label{sys_of_eq1}
     \begin{cases}
         \frac{\partial A}{\partial t}+\frac{\partial Au}{\partial x}=0\\
-        \frac{\partial u}{\partial t}+\frac{1}{2}\frac{\partial u^2}{\partial x}-\frac{\partial p}{\partial x}+M_f \frac{u}{A}\\
+        \frac{\partial u}{\partial t}+\frac{1}{2}\frac{\partial u^2}{\partial x}-\frac{\partial p}{\partial x}+M_f \frac{u}{A}=0\\
         p=M_p(\sqrt{A}-1).
     \end{cases},
     \end{equation}
 где $M_f=\frac{-2(\xi+2)\mu \pi t_0}{\rho A_0}$, $M_P=\frac{\frac{4}{3}\sqrt{\pi}Eh}{\rho U_0\sqrt{A_0}}(\sqrt{A}-1)$.
 
     
+Для решения данной системы будем использовать upwind. Таким образом, первое уравнение системы можем представить в виде:
+$$
+\begin{aligned}
+    &\frac{\hat{A_i}-A_i}{\tau}+\frac{F_{i+1/2}-F_{i-1/2}}{h}=0,\\
+    &F_{i+1/2}=\begin{cases}
+        u_i A_i, &u_i>0\\
+        u_{i+1}A_{i+1},& u_i<0
+    \end{cases}.
+\end{aligned}
+$$
+И второе:
+$$
+\begin{aligned}
+    &\frac{\hat{u_i}-u_i}{\tau}+\frac{F_{i+1/2}^u-F_{i-1/2}^u}{h}+\frac{\partial P}{\partial x}+M_P\frac{\hat{u_i}}{\hat{A_i}}=0,\\
+    &F_{i+1/2}^u=\begin{cases}
+        \frac{u_i^2}{2}, &u_i>0\\
+        \frac{u_{i+1}^2}{2}, &u_i<0
+    \end{cases}.
+\end{aligned}
+$$
+Полагаем, что Q(t) нам дано, a P(0)=0, т.е на границе:\\
+$
+\begin{aligned}
+    Q=uA, \quad
+    p=M_p(\sqrt{A}-1)=0\longrightarrow A=1
+    \longrightarrow Q=u.
+\end{aligned}
+$
+
+\subsection*{TVD-схема}
+Схема TVD (Total Variation Diminishing) используется для численного решения уравнений гидродинамики. Она работает по следующему принципу. 
+Задаётся распределение параметров в начальный момент времени. 
+Затем с помощью конечно-разностной схемы вычисляются значения параметров в каждый последующий момент времени. 
+При этом схема TVD обеспечивает сохранение свойства "total variation diminishing", т.е. сумма изменений параметров 
+на каждом шаге не увеличивается по сравнению с предыдущим шагом. А так же сохраняет высокий порядок точности и является консервативной.
+
+Для обеспечения всех свойств схемы используются ограничители. Их существует много, но мы рассмотрим MinMod, MC, Van Leer, SuperBee.
+Задаются они следующим образом:
+
+$
+\begin{aligned}
+	MinMod: Limiter(r)=\begin{cases}
+        0, &r<0\\
+        r, &0<r\leq 1\\
+        1< &r>1
+    \end{cases}
+\end{aligned}
+$
+
+$
+\begin{aligned}
+    MC: Limiter(r)=max \left(0, min \left(\frac{1+r}{2},2,2r \right)\right)
+\end{aligned}
+$ 
+
+$
+\begin{aligned}
+    VanLeer: Limiter(r)=\frac{r+|r|}{1+|r|}
+\end{aligned}
+$
+
+$
+\begin{aligned}
+    SuperBee: Limiter(r)=\begin{cases}
+        0, r\leq 0\\
+        max(min(1,2r),min(2,r))
+    \end{cases}
+\end{aligned}
+$
+
+В итоге можем построит графики распределения скорости по времени:
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.45\linewidth]{minmod1.png}
+    \includegraphics[width=0.4\linewidth]{mc.png}\\
+    \includegraphics[width=0.45\linewidth]{vanleer.png}
+    \includegraphics[width=0.45\linewidth]{superbee.png}    
+    \caption{Зависимость скорости от времени для ограничителей MinMod, MC, VanLeer, SuperBee}
+    \label{sc}
+    \end{figure}
