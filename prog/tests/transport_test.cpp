@@ -1,5 +1,6 @@
 
 #include "testutils.hpp"
+#include <fstream>
 #include "assem/misc.hpp"
 #include "grid.hpp"
 #include "assem/transport.hpp"
@@ -11,15 +12,15 @@
 using namespace bf;
 
 TEST_CASE("Transport equation, upwind", "[upwind]"){
-	auto u0 = [](double x){
+	auto u0 = [](double x) -> double{
 		return (x < -0.2 || x > 0.2) ? 0 : 1;
 	};
 
-	auto ufun = [&](double x, double t){
+	auto ufun = [&](double x, double t) -> double{
 		return u0(x-t);
 	};
 
-	Grid grid(1, 30);
+	Grid grid(5, 150);
 
 	std::vector<double> u(grid.n_points());
 	for (size_t i=0; i<grid.n_points(); ++i){
@@ -28,30 +29,42 @@ TEST_CASE("Transport equation, upwind", "[upwind]"){
 
 	std::shared_ptr<ITransport> tran;
 	int num_section;
-	//SECTION("Upwind"){
-	//	num_section = 1;
-	//	tran.reset(new UpwindTransport());
-	//}
+	// SECTION("Upwind"){
+	// 	num_section = 1;
+	// 	tran.reset(new UpwindTransport());
+	// }
 	SECTION("TvdSuperbee"){
 		num_section = 2;
 		tran.reset(new TvdSuperbeeTransport());
 	}
-	//SECTION("TvdMc"){
-	//	num_section = 3;
-	//	tran.reset(new TvdMcTransport());
-	//}
-	//SECTION("VanLeer"){
-	//	num_section = 4;
-	//	tran.reset(new TvdVanLeerTransport());
-	//}
-	//SECTION("MinMod"){
-	//	num_section = 5;
-	//	tran.reset(new TvdMinModTransport());
-	//}
+	// SECTION("TvdMc"){
+	// 	num_section = 3;
+	// 	tran.reset(new TvdMcTransport());
+	// }
+	// SECTION("VanLeer"){
+	// 	num_section = 4;
+	// 	tran.reset(new TvdVanLeerTransport());
+	// }
+	// SECTION("MinMod"){
+	// 	num_section = 5;
+	// 	tran.reset(new TvdMinModTransport());
+	// }
+	// SECTION("Umist"){
+	// 	num_section = 6;
+	// 	tran.reset(new TvdUmistTransport());
+	// }
+	// SECTION("Ospre"){
+	// 	num_section = 7;
+	// 	tran.reset(new TvdOspreTransport());
+	// }
+	// SECTION("Charm"){
+	// 	num_section = 8;
+	// 	tran.reset(new TvdCharmTransport());
+	// }
 	std::vector<double> vel(grid.n_points(), 1);
 	tran->set_velocity(vel);
 
-	std::shared_ptr<IMonitor> saver(new VtkMonitor(grid, "u"));
+	std::shared_ptr<IMonitor> saver(new VtkMonitor(grid, "u_mc"));
 	std::shared_ptr<IMonitorTrigger> trigger(new MonitorTrigger_TimePeriod(0.05));
 	Logger logger;
 	logger.add_monitor(saver, trigger);
@@ -61,6 +74,7 @@ TEST_CASE("Transport equation, upwind", "[upwind]"){
 	double tau = 0.007;
 	double h = grid.len(0);
 	double nrm;
+	std::ofstream norm_out("norms.txt");
 	while (time <= 1){
 		//fluxes
 		std::vector<double> fluxes = tran->compute_fluxes(u);
@@ -76,6 +90,7 @@ TEST_CASE("Transport equation, upwind", "[upwind]"){
 			u[i] -= tau/h * (fluxes[cell_right] - fluxes[cell_left]);
 		}
 
+
 		// compute norm
 		nrm = 0;
 		for (size_t i=0; i<grid.n_points(); ++i){
@@ -84,15 +99,19 @@ TEST_CASE("Transport equation, upwind", "[upwind]"){
 		}
 		nrm = sqrt(nrm/grid.n_points());
 		iter += 1;
+		norm_out << iter << "\t" << time << "\t" << nrm << std::endl;
 		logger.step(iter, time, u);
 	}
 
 	switch (num_section){
-		//case 1: CHECK(nrm == Approx(0.1871625127)); break;
+		case 1: CHECK(nrm == Approx(0.1871625127)); break;
 		case 2: CHECK(nrm == Approx(0.0947743)); break;
-		//case 3: CHECK(nrm); break; 
-		//case 4: CHECK(nrm); break;
-		//case 5: CHECK(nrm); break;
+		case 3: CHECK(nrm == Approx(0.0991519263)); break; 
+		case 4: CHECK(nrm == Approx(0.1009686601)); break;
+		case 5: CHECK(nrm == Approx(0.1187898205)); break;
+		case 6: CHECK(nrm == Approx(0.0999570685)); break;
+		case 7: CHECK(nrm == Approx(0.1028867349)); break;
+		case 8: CHECK(nrm); break;
 		default: _THROW_UNREACHABLE_;
 	}
 }

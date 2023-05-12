@@ -404,7 +404,8 @@ $
 При этом схема TVD обеспечивает сохранение свойства "total variation diminishing", т.е. сумма изменений параметров 
 на каждом шаге не увеличивается по сравнению с предыдущим шагом. А так же сохраняет высокий порядок точности и является консервативной.
 
-Для обеспечения всех свойств схемы используются ограничители. Их существует много, но мы рассмотрим MinMod, MC, Van Leer, SuperBee.
+Для обеспечения всех свойств схемы используются ограничители. Их существует много, но мы рассмотрим MinMod, MC, Van Leer, SuperBee, 
+umist, ospre.
 Задаются они следующим образом:
 
 $
@@ -417,17 +418,20 @@ $
 \end{aligned}
 $
 
+
 $
 \begin{aligned}
     MC: Limiter(r)=max \left(0, min \left(\frac{1+r}{2},2,2r \right)\right)
 \end{aligned}
 $ 
 
+
 $
 \begin{aligned}
     VanLeer: Limiter(r)=\frac{r+|r|}{1+|r|}
 \end{aligned}
 $
+
 
 $
 \begin{aligned}
@@ -438,14 +442,35 @@ $
 \end{aligned}
 $
 
-В итоге можем построит графики распределения скорости по времени:
+
+$
+\begin{aligned}
+    Umist: Limiter(r)=
+        max(0,min(2r,(0.25+0.75r),(0.75+0.25r),2))
+\end{aligned}
+$
+
+
+$
+\begin{aligned}
+    Ospre: Limiter(r)=
+    \frac{1.5(r^2+r)}{r^2+r+1}
+\end{aligned}
+$
+
+
+В итоге можем построить графики:
 
 \begin{figure}[h]
     \centering
-    \includegraphics[width=0.45\linewidth]{minmod1.png}
-    \includegraphics[width=0.4\linewidth]{mc.png}\\
-    \includegraphics[width=0.45\linewidth]{vanleer.png}
-    \includegraphics[width=0.45\linewidth]{superbee.png}    
-    \caption{Зависимость скорости от времени для ограничителей MinMod, MC, VanLeer, SuperBee}
+    \includegraphics[width=0.6\linewidth]{0.3.jpeg}
+    \caption{Распределение объёма по x, в момент 0.3}
     \label{sc}
-    \end{figure}
+\end{figure}
+
+\begin{figure}[h]
+    \centering
+     \includegraphics[width=0.6\linewidth]{0.7.jpeg}
+    \caption{Распределение объёма по x, в момент 0.7}
+    \label{sc}
+\end{figure}

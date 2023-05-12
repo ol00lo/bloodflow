@@ -52,5 +52,29 @@ private:
 	std::vector<double> _velocity;
 };
 
+class TvdUmistTransport: public ITransport{
+public:
+	void set_velocity(const std::vector<double>& vel) override;
+	std::vector<double> compute_fluxes(const std::vector<double>& u) const override;
+private:
+	std::vector<double> _velocity;
+};
+
+class TvdOspreTransport: public ITransport{
+public:
+	void set_velocity(const std::vector<double>& vel) override;
+	std::vector<double> compute_fluxes(const std::vector<double>& u) const override;
+private:
+	std::vector<double> _velocity;
+};
+
+class TvdCharmTransport: public ITransport{
+public:
+	void set_velocity(const std::vector<double>& vel) override;
+	std::vector<double> compute_fluxes(const std::vector<double>& u) const override;
+private:
+	std::vector<double> _velocity;
+};
+
 }
 #endif
