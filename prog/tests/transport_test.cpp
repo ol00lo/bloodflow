@@ -19,8 +19,8 @@ TEST_CASE("Transport equation, upwind", "[upwind]"){
 	auto ufun = [&](double x, double t) -> double{
 		return u0(x-t);
 	};
-
-	Grid grid(5, 150);
+	double len = 5.0;
+	Grid grid(len, 30*len);
 
 	std::vector<double> u(grid.n_points());
 	for (size_t i=0; i<grid.n_points(); ++i){
@@ -33,18 +33,18 @@ TEST_CASE("Transport equation, upwind", "[upwind]"){
 	// 	num_section = 1;
 	// 	tran.reset(new UpwindTransport());
 	// }
-	SECTION("TvdSuperbee"){
-		num_section = 2;
-		tran.reset(new TvdSuperbeeTransport());
-	}
+	// SECTION("TvdSuperbee"){
+	// 	num_section = 2;
+	// 	tran.reset(new TvdSuperbeeTransport());
+	// }
 	// SECTION("TvdMc"){
 	// 	num_section = 3;
 	// 	tran.reset(new TvdMcTransport());
 	// }
-	// SECTION("VanLeer"){
-	// 	num_section = 4;
-	// 	tran.reset(new TvdVanLeerTransport());
-	// }
+	SECTION("VanLeer"){
+		num_section = 4;
+		tran.reset(new TvdVanLeerTransport());
+	}
 	// SECTION("MinMod"){
 	// 	num_section = 5;
 	// 	tran.reset(new TvdMinModTransport());
@@ -53,10 +53,10 @@ TEST_CASE("Transport equation, upwind", "[upwind]"){
 	// 	num_section = 6;
 	// 	tran.reset(new TvdUmistTransport());
 	// }
-	// SECTION("Ospre"){
-	// 	num_section = 7;
-	// 	tran.reset(new TvdOspreTransport());
-	// }
+	//  SECTION("Ospre"){
+	//  	num_section = 7;
+	//  	tran.reset(new TvdOspreTransport());
+	//  }
 	// SECTION("Charm"){
 	// 	num_section = 8;
 	// 	tran.reset(new TvdCharmTransport());
@@ -64,7 +64,7 @@ TEST_CASE("Transport equation, upwind", "[upwind]"){
 	std::vector<double> vel(grid.n_points(), 1);
 	tran->set_velocity(vel);
 
-	std::shared_ptr<IMonitor> saver(new VtkMonitor(grid, "u_mc"));
+	std::shared_ptr<IMonitor> saver(new VtkMonitor(grid, "u_vanleer"));
 	std::shared_ptr<IMonitorTrigger> trigger(new MonitorTrigger_TimePeriod(0.05));
 	Logger logger;
 	logger.add_monitor(saver, trigger);
@@ -74,7 +74,7 @@ TEST_CASE("Transport equation, upwind", "[upwind]"){
 	double tau = 0.007;
 	double h = grid.len(0);
 	double nrm;
-	std::ofstream norm_out("norms.txt");
+	std::ofstream norm_out("norms_vanleer.txt");
 	while (time <= 1){
 		//fluxes
 		std::vector<double> fluxes = tran->compute_fluxes(u);
