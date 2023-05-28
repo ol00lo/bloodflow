@@ -344,15 +344,16 @@ $\Vec{\tau} =\partial \Vec{X}/\partial s^{-1}$ единичный касател
 Для решения данной задачи будем использовать метод конечных разностей.
 
 Имеем систему уравнений:
-\begin{equation}
+
+\begin{equation*}
     \label{sys_of_eq}
     \begin{cases}
-        \frac{\partial A}{\partial t}+\frac{\partial Au}{\partial x}=0\\
-        \frac{\partial u}{\partial t}+U\frac{\partial u}{\partial x}+\frac{1}{\rho}\frac{\partial p}{\partial x}=\frac{f}{\rho A}\\
-        f=-2(\xi+2)\mu\pi U\\
-        p=\frac{4}{3}\sqrt{\pi}\frac{Eh}{A_0}(\sqrt{A}-\sqrt{A_0})
+        &\frac{\partial A}{\partial t}+\frac{\partial Au}{\partial x}=0\\
+        &\frac{\partial u}{\partial t}+U\frac{\partial u}{\partial x}+\frac{1}{\rho}\frac{\partial p}{\partial x}=\frac{f}{\rho A}\\
+        &f=-2(\xi+2)\mu\pi U\\
+        &p=\frac{4}{3}\sqrt{\pi}\frac{Eh}{A_0}(\sqrt{A}-\sqrt{A_0})
     \end{cases}.
-\end{equation}
+\end{equation*}
 
 Для работы с этой системой необходимо произвести обезразмеривание. Это необходимо, чтобы избавиться от размерности величин,
 следовательно сделать систему удобнее для моделирования и уменьшить количество задаваемых переменных, 
@@ -488,14 +489,14 @@ $
 На основе описанного выше можно произвести расчёты и построить графики распределения объема по времени, а так же сравнить
 заданные ограничители.
 
-\begin{figure}[h]
+\begin{figure}[h!]
     \centering
     \includegraphics[width=0.6\linewidth]{0.3.jpeg}
     \caption{Распределение объёма в момент 0.3}
     \label{03}
 \end{figure}
 
-\begin{figure}[h]
+\begin{figure}[h!]
     \centering
      \includegraphics[width=0.6\linewidth]{0.7.jpeg}
     \caption{Распределение объёма в момент 0.7}
@@ -504,26 +505,38 @@ $
 
 
 Погрешности ограничителей:
-\begin{figure}[h]
+\begin{figure}[h!]
     \centering
-     \includegraphics[width=0.7\linewidth]{Screenshot_1.png}
+     \includegraphics[width=1\linewidth]{norm.png}
     \caption{График погрешностей.}
     \label{norms}
 \end{figure}
 
-\begin{table}[tp]
-\caption {Значения погрешностей.}
+\begin{table}[tp!]
+\centering
+\caption {Значения погрешностей в момент 0.56.}
 \label{tab:norms}
-\begin{tabular}{|l|l|l|l|c|c|c|c|c|c|c|}
+\begin{tabular}{|l|l|c|c|c|c|c|c|c|c|}
 \hline
-Переменная & MinMod & MC & Van Leer & SuperBee & Umist & Ospre & Upwind\\
+Ограничитель & Значение \\
 \hline
-X & 0.56 & 0.56 & 0.56 & 0.56 & 0.56 & 0.56 & 0.56 \\
+SuperBee & 0.0659053\\
 \hline
-Y & 0.0737164 & 0.0659238 & 0.0685166 & 0.0659053 & 0.0663728 & 0.069493 & 0.103783 \\
+MC &  0.0659238\\
+\hline
+Umist & 0.0663728\\
+\hline
+Van Leer & 0.0685166\\
+\hline
+Ospre &  0.069493\\
+\hline
+MinMod & 0.0737164\\
+\hline
+Upwind  & 0.103783\\
 \hline
 \end{tabular}
 \end{table}
 
-На основе полученный данных можем сделать вывод, что для моделирования данной задачи не стоит использовать такие ограничители, как
+
+На основе полученных данных можем сделать вывод, что для моделирования данной задачи не стоит использовать такие ограничители, как
 Upwind и MinMod, а самыми точными оказались SuperBee и MC
