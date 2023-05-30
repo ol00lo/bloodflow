@@ -9,7 +9,6 @@
 	doi = {https://doi.org/10.1002/cnm.2732},
 	url = {https://onlinelibrary.wiley.com/doi/abs/10.1002/cnm.2732},
 	eprint = {https://onlinelibrary.wiley.com/doi/pdf/10.1002/cnm.2732},
-	note = {e02732 cnm.2732},
 	abstract = {Summary Hæmodynamical simulations using one-dimensional (1D) computational models exhibit many of the features of the systemic circulation under normal and diseased conditions. Recent interest in verifying 1D numerical schemes has led to the development of alternative experimental setups and the use of three-dimensional numerical models to acquire data not easily measured in vivo. In most studies to date, only one particular 1D scheme is tested. In this paper, we present a systematic comparison of six commonly used numerical schemes for 1D blood flow modelling: discontinuous Galerkin, locally conservative Galerkin, Galerkin least-squares finite element method, finite volume method, finite difference MacCormack method and a simplified trapezium rule method. Comparisons are made in a series of six benchmark test cases with an increasing degree of complexity. The accuracy of the numerical schemes is assessed by comparison with theoretical results, three-dimensional numerical data in compatible domains with distensible walls or experimental data in a network of silicone tubes. Results show a good agreement among all numerical schemes and their ability to capture the main features of pressure, flow and area waveforms in large arteries. All the information used in this study, including the input data for all benchmark cases, experimental data where available and numerical solutions for each scheme, is made publicly available online, providing a comprehensive reference data set to support the development of 1D models and numerical schemes. Copyright © 2015 John Wiley \& Sons, Ltd.},
 	year = {2015}
 }
@@ -220,4 +219,53 @@ editor = {Rita Rezzani and Luigi Fabrizio Rodella},
 chapter = {4},
 doi = {10.5772/intechopen.80712},
 url = {https://doi.org/10.5772/intechopen.80712}
+}
+
+@article{Xiu:2007,
+title = {Parametric uncertainty analysis of pulse wave propagation in a model of a human arterial network},
+journal = {Journal of Computational Physics},
+volume = {226},
+number = {2},
+pages = {1385-1407},
+year = {2007},
+issn = {0021-9991},
+doi = {https://doi.org/10.1016/j.jcp.2007.05.020},
+url = {https://www.sciencedirect.com/science/article/pii/S0021999107002392},
+author = {Dongbin Xiu and Spencer J. Sherwin},
+keywords = {Mathematical biology, Hemodynamics, Arterial network, Stochastic modelling, Uncertainty analysis, High-order methods},
+abstract = {Reduced models of human arterial networks are an efficient approach to analyze quantitative macroscopic features of human arterial flows. The justification for such models typically arise due to the significantly long wavelength associated with the system in comparison to the lengths of arteries in the networks. Although these types of models have been employed extensively and many issues associated with their implementations have been widely researched, the issue of data uncertainty has received comparatively little attention. Similar to many biological systems, a large amount of uncertainty exists in the value of the parameters associated with the models. Clearly reliable assessment of the system behaviour cannot be made unless the effect of such data uncertainty is quantified. In this paper we present a study of parametric data uncertainty in reduced modelling of human arterial networks which is governed by a hyperbolic system. The uncertain parameters are modelled as random variables and the governing equations for the arterial network therefore become stochastic. This type stochastic hyperbolic systems have not been previously systematically studied due to the difficulties introduced by the uncertainty such as a potential change in the mathematical character of the system and imposing boundary conditions. We demonstrate how the application of a high-order stochastic collocation method based on the generalized polynomial chaos expansion, combined with a discontinuous Galerkin spectral/hp element discretization in physical space, can successfully simulate this type of hyperbolic system subject to uncertain inputs with bounds. Building upon a numerical study of propagation of uncertainty and sensitivity in a simplified model with a single bifurcation, a systematical parameter sensitivity analysis is conducted on the wave dynamics in a multiple bifurcating human arterial network. Using the physical understanding of the dynamics of pulse waves in these types of networks we are able to provide an insight into the results of the stochastic simulations, thereby demonstrating the effects of uncertainty in physiologically accurate human arterial networks.}
+}
+
+@article{smith:2002,
+author = {Smith, N. P. and Pullan, A. J. and Hunter, P. J.},
+title = {An Anatomically Based Model of Transient Coronary Blood Flow in the Heart},
+journal = {SIAM Journal on Applied Mathematics},
+volume = {62},
+number = {3},
+pages = {990-1018},
+year = {2002},
+doi = {10.1137/S0036139999355199},
+
+URL = {
+
+        https://doi.org/10.1137/S0036139999355199
+
+
+
+},
+eprint = {
+
+        https://doi.org/10.1137/S0036139999355199
+
+
+
+}
+,
+    abstract = { An efficient finite difference model of blood flow through the coronary vessels is developed and applied to a geometric model of the largest six generations of the coronary arterial network. By constraining the form of the velocity profile across the vessel radius, the three-dimensional Navier--Stokes equations are reduced to one-dimensional equations governing conservation of mass and momentum. These equations are coupled to a pressure-radius relationship characterizing the elasticity of the vessel wall to describe the transient blood flow through a vessel segment. The two step Lax--Wendroff finite difference method is used to numerically solve these equations. The flow through bifurcations, where three vessel segments join, is governed by the equations of conservation of mass and momentum. The solution to these simultaneous equations is calculated using the multidimensional Newton--Raphson method. Simulations of blood flow through a geometric model of the coronary network are presented demonstrating physiologically realistic flow rates, washout curves, and pressure distributions. }
+}
+
+@book{mazo1:2018,
+author = {Mazo, Alexander},
+year = {2018},
+title = {Вычислительная Гидродинамика Часть 1. Математические модели, сетки, сеточные схемы}
 }
