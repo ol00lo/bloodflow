@@ -8,7 +8,7 @@
 *.log
 *.out
 *.brf
-*.pdf
+thesis*/*.pdf
 *.bcf
 *.run.*
 *.fdb_latexmk
