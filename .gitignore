@@ -15,3 +15,7 @@
 *.fls
 *.synctex.gz
 build/
+.vs/
+prog/.vscode/
+a.gdb
+.syntastic*

@@ -1,0 +1,50 @@
+\documentclass[a4paper, 14pt]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage{graphicx}
+\usepackage{float}%"Плавающие" картинки
+\usepackage{wrapfig}%Обтекание фигур (таблиц, картинок и прочего)
+\usepackage{amsmath, amssymb, amsthm}
+\usepackage[T1, T2A]{fontenc}
+\usepackage[english, russian]{babel}
+\usepackage[left=2cm,right=2cm, top=2cm, bottom=2cm]{geometry}
+% Литература в biblatex
+\usepackage[backend=biber,bibencoding=utf8,language=auto,autolang=other,sorting=ntvy,babel=other,
+            maxbibnames=99,maxcitenames=2,style=gost-numeric,movenames=false]{biblatex}
+\addbibresource{../doc/refs.bib}
+% Межстрочный интервал = 1.5pt
+\usepackage{setspace}
+\onehalfspacing
+% % Абзацный отступ = 1.25см
+\usepackage{indentfirst}
+\setlength\parindent{12.5mm}
+% Путь до папки с изображениями
+\graphicspath{ {./images/} }
+% Активные ссылки на формулы и лит-ру
+\usepackage[
+  colorlinks=true,
+  citecolor=blue,
+  linkcolor=blue,
+  linktoc=page,
+]{hyperref}
+% tilde symbol
+\usepackage{textcomp}
+\renewcommand{\texttilde}{\raisebox{0.5ex}{\texttildelow}}
+% Reynolds number
+\newcommand{\Ren}{\mathrm{Re}}
+\renewcommand{\vec}[1]{\boldsymbol{\rm #1}}
+
+\begin{document}
+
+\include{titlepage}
+
+\newpage
+\tableofcontents
+\newpage
+
+\include{intro}
+
+\newpage
+\printbibliography
+
+\end{document}
