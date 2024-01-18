@@ -2,7 +2,7 @@
 #include <algorithm>
 
 
-VesselGraph::VesselGraph(const std::vector<std::vector<int>>& edges, const std::vector<double>& len) {
+bflow::VesselGraph::VesselGraph(const std::vector<std::vector<int>>& edges, const std::vector<double>& len) {
 	if (edges.size() < 2 || len.size() < 1 || edges.size()-len.size() != 1) throw std::runtime_error("Incorrect input"); 
 	
 	_nodes_edges = edges;
@@ -27,7 +27,7 @@ VesselGraph::VesselGraph(const std::vector<std::vector<int>>& edges, const std::
 	}
 }
 
-std::array<int, 2> VesselGraph::tab_edge_node(int iedge) const {
+std::array<int, 2> bflow::VesselGraph::tab_edge_node(int iedge) const {
 	std::array<int, 2> nodes = { -1, -1 };
 
 	int i = -1;
@@ -45,14 +45,14 @@ std::array<int, 2> VesselGraph::tab_edge_node(int iedge) const {
 	return nodes;
 }
 
-std::vector<int> VesselGraph::tab_node_edge(int inode) const {
+std::vector<int> bflow::VesselGraph::tab_node_edge(int inode) const {
 	if (inode >= _nodes_edges.size()) {
 		throw std::runtime_error("Out of graph");
 	}
 	return _nodes_edges[inode];
 }
 
-int VesselGraph::find_edge_by_nodes(int inode, int jnode) const {
+int bflow::VesselGraph::find_edge_by_nodes(int inode, int jnode) const {
 	if (inode >= _nodes_edges.size()|| jnode >= _nodes_edges.size()) {
 		throw std::runtime_error("Out of graph");
 	}
@@ -65,17 +65,17 @@ int VesselGraph::find_edge_by_nodes(int inode, int jnode) const {
 	return -1;
 }
 
-double VesselGraph::find_length(int iedge) const {
+double bflow::VesselGraph::find_length(int iedge) const {
 	if (iedge >= _edge_lengths.size()) {
 		throw std::runtime_error("Out of graph");
 	}
 	return _edge_lengths[iedge];
 }
 
-int VesselGraph::n_nodes() const {
+int bflow::VesselGraph::n_nodes() const {
 	return _nodes_edges.size();
 }
 
-int VesselGraph::n_edges() const {
+int bflow::VesselGraph::n_edges() const {
 	return _n_edges;
 }
