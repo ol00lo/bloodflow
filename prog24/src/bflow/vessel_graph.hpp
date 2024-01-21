@@ -18,4 +18,18 @@ namespace bflow {
 		std::vector<double> _edge_lengths;
 		int _n_edges;
 	};
+
+	class GraphGrid {
+	public:
+		GraphGrid(const VesselGraph& _graph, double h);
+		int n_points() const;
+		int n_cells() const;
+		std::vector<int> tab_point_cells(int point) const;
+		std::array<int, 2> tab_cell_points(int cell) const;
+		int find_edge_by_cell(int cell) const;
+		std::vector<int> points_by_edge(int edge) const;
+	private:
+		std::vector<std::vector<int>> _points;
+		std::vector<std::vector<double>> _cells;
+	};
 }
