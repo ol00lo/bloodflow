@@ -10,6 +10,12 @@
 
 namespace bflow
 {
+struct Point2
+{
+    double x;
+    double y;
+};
+
 class GraphGrid
 {
 public:
@@ -17,10 +23,11 @@ public:
     int n_points() const;
     int n_cells() const;
     std::vector<int> tab_point_cell(int point) const;
-    std::array<int, 2> tab_cell_point(int cell);
+    std::array<int, 2> tab_cell_point(int cell) const;
     int find_edge_by_cell(int cell) const;
     std::vector<int> points_by_edge(int edge) const;
-    double find_cell_length(int cell);
+    double find_cell_length(int cell) const;
+    std::vector<Point2> generate_nodes_coo(const VesselGraph &graph) const;
 
 private:
     std::vector<std::vector<int>> _points;

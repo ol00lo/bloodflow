@@ -1,4 +1,6 @@
 #include "graph_grid.hpp"
+#include <algorithm>
+#define PI 3.1415926
 
 using namespace bflow;
 
@@ -77,7 +79,7 @@ int GraphGrid::n_cells() const
     return _cells.size();
 }
 
-std::array<int, 2> GraphGrid::tab_cell_point(int cell)
+std::array<int, 2> GraphGrid::tab_cell_point(int cell) const
 {
     if (cell >= _cells.size())
     {
@@ -113,11 +115,47 @@ std::vector<int> GraphGrid::points_by_edge(int edge) const
     return _points[edge];
 }
 
-double GraphGrid::find_cell_length(int cell)
+double GraphGrid::find_cell_length(int cell) const
 {
     if (cell >= _cells.size())
     {
         throw std::runtime_error("Cell out of grid");
     }
     return _cells[cell];
+}
+
+std::vector<Point2> GraphGrid::generate_nodes_coo(const VesselGraph &graph) const
+{
+    std::vector<Point2> nodes;
+    Point2 old_point = {0.0, 0.0};
+    nodes.push_back(old_point);
+
+    int edges = -1;
+    for (int node = 0; node < graph.n_nodes(); ++node)
+    {
+        old_point = nodes[node];
+        std::vector<int> nedges = graph.tab_node_edge(node);
+        std::sort(nedges.begin(), nedges.end());
+        int size = nedges.size();
+
+        int i = 1;
+        for (int edge = 0; edge < size; ++edge)
+        {
+            if (nedges[edge] > edges)
+            {
+                edges++;
+                Point2 new_point;
+                double len = graph.find_length(edges);
+                double angle = PI - PI * i / size;
+                if (node == 0)
+                    angle = PI - PI * i / (size + 1);
+                new_point.x = old_point.x + len * std::cos(angle);
+                new_point.y = old_point.y + len * std::sin(angle);
+                nodes.push_back(new_point);
+                i++;
+            }
+        }
+    }
+
+    return nodes;
 }

@@ -3,23 +3,18 @@
 
 #include "graph_grid.hpp"
 
-struct Point
-{
-    double x;
-    double y;
-};
-
 namespace bflow
 {
 class GridSaver
 {
 public:
-    GridSaver(const GraphGrid &grid);
-    void points_save(std::string filename) const;
+    // GridSaver(const GraphGrid &grid);
+    GridSaver(const GraphGrid &grid, const std::vector<Point2> &nodes_coo);
+    void save_area(std::string filename) const;
 
 private:
-    std::vector<Point> _points;
-    std::vector<std::vector<int>> _cells;
+    std::vector<Point2> _points;
+    std::vector<std::array<int, 2>> _cells;
 };
 } // namespace bflow
 
