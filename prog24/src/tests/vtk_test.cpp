@@ -1,11 +1,25 @@
 #include "bflow/vessel_graph.hpp"
 #include "bflow/vtk.hpp"
 #include "catch.hpp"
+#include "tests/test_utils.cpp"
 #include <fstream>
 #include <iostream>
+#include <string>
 #include <vector>
 
 using namespace bflow;
+
+int string_count(std::string file_name)
+{
+    std::ifstream file(file_name);
+    int count = 0;
+    std::string line;
+    while (std::getline(file, line))
+    {
+        ++count;
+    }
+    return count;
+}
 
 TEST_CASE("simple test vtk0", "[gridsaver-0]")
 {
@@ -13,18 +27,11 @@ TEST_CASE("simple test vtk0", "[gridsaver-0]")
     std::vector<double> ed = {1.0};
     VesselGraph gr1(node, ed);
     GraphGrid grid1(gr1, 0.25);
-    std::vector<Point2> nodes_coo = grid1.generate_nodes_coo(gr1);
+    std::vector<Point2> nodes_coo = generate_nodes_coo(gr1);
     GridSaver vtk1(grid1, nodes_coo);
     vtk1.save_area("first_try.vtk");
 
-    char *str = new char[1024];
-    int i = 0;
-    std::ifstream base("first_try.vtk");
-    while (!base.eof())
-    {
-        base.getline(str, 1024, '\n');
-        i++;
-    }
+    int i = string_count("first_try.vtk");
     CHECK(i == 21);
 }
 
@@ -34,19 +41,12 @@ TEST_CASE("simple test vtk1", "[gridsaver-1]")
     std::vector<double> ed = {1.4142135624, 1.0, 1.4142135624};
     VesselGraph gr1(node, ed);
     GraphGrid grid1(gr1, 0.8);
-    std::vector<Point2> nodes_coo = grid1.generate_nodes_coo(gr1);
+    std::vector<Point2> nodes_coo = generate_nodes_coo(gr1);
     GridSaver vtk1(grid1, nodes_coo);
     vtk1.save_area("first_try.vtk");
 
-    char *str = new char[1024];
-    int i = 0;
-    std::ifstream base("first_try.vtk");
-    while (!base.eof())
-    {
-        base.getline(str, 1024, '\n');
-        i++;
-    }
-    CHECK(i == 24);
+    int i = string_count("first_try.vtk");
+    CHECK(i == 28);
 }
 
 TEST_CASE("simple test vtk2", "[gridsaver-2]")
@@ -55,19 +55,12 @@ TEST_CASE("simple test vtk2", "[gridsaver-2]")
     std::vector<double> ed = {1.4142135624, 1.0, 1.4142135624, 1.0};
     VesselGraph gr1(node, ed);
     GraphGrid grid1(gr1, 1.0);
-    std::vector<Point2> nodes_coo = grid1.generate_nodes_coo(gr1);
+    std::vector<Point2> nodes_coo = generate_nodes_coo(gr1);
     GridSaver vtk1(grid1, nodes_coo);
     vtk1.save_area("first_try.vtk");
 
-    char *str = new char[1024];
-    int i = 0;
-    std::ifstream base("first_try.vtk");
-    while (!base.eof())
-    {
-        base.getline(str, 1024, '\n');
-        i++;
-    }
-    CHECK(i == 21);
+    int i = string_count("first_try.vtk");
+    CHECK(i == 27);
 }
 
 TEST_CASE("simple test vtk3", "[gridsaver-3]")
@@ -76,19 +69,12 @@ TEST_CASE("simple test vtk3", "[gridsaver-3]")
     std::vector<double> ed = {1.4142135624, 3.0, 2 * 1.4142135624, 2.0};
     VesselGraph gr1(node, ed);
     GraphGrid grid1(gr1, 1.0);
-    std::vector<Point2> nodes_coo = grid1.generate_nodes_coo(gr1);
+    std::vector<Point2> nodes_coo = generate_nodes_coo(gr1);
     GridSaver vtk1(grid1, nodes_coo);
     vtk1.save_area("first_try.vtk");
 
-    char *str = new char[1024];
-    int i = 0;
-    std::ifstream base("first_try.vtk");
-    while (!base.eof())
-    {
-        base.getline(str, 1024, '\n');
-        i++;
-    }
-    CHECK(i == 36);
+    int i = string_count("first_try.vtk");
+    CHECK(i == 42);
 }
 
 TEST_CASE("simple test vtk4", "[gridsaver-4]")
@@ -98,17 +84,10 @@ TEST_CASE("simple test vtk4", "[gridsaver-4]")
     std::vector<double> ed = {2.82, 4.0, 3.6, 3.16, 2.24, 3.6, 3.0, 2.24, 2.24, 3.6};
     VesselGraph gr1(node, ed);
     GraphGrid grid1(gr1, 0.2);
-    std::vector<Point2> nodes_coo = grid1.generate_nodes_coo(gr1);
+    std::vector<Point2> nodes_coo = generate_nodes_coo(gr1);
     GridSaver vtk1(grid1, nodes_coo);
     vtk1.save_area("first_try.vtk");
 
-    char *str = new char[1024];
-    int i = 0;
-    std::ifstream base("first_try.vtk");
-    while (!base.eof())
-    {
-        base.getline(str, 1024, '\n');
-        i++;
-    }
-    CHECK(i == 465);
+    int i = string_count("first_try.vtk");
+    CHECK(i == 483);
 }

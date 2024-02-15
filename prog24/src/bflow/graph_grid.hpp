@@ -19,15 +19,16 @@ struct Point2
 class GraphGrid
 {
 public:
-    GraphGrid(const VesselGraph &graph, double h);
+    GraphGrid(const VesselGraph& graph, double h);
     int n_points() const;
     int n_cells() const;
+    int n_edges() const;
     std::vector<int> tab_point_cell(int point) const;
     std::array<int, 2> tab_cell_point(int cell) const;
     int find_edge_by_cell(int cell) const;
     std::vector<int> points_by_edge(int edge) const;
     double find_cell_length(int cell) const;
-    std::vector<Point2> generate_nodes_coo(const VesselGraph &graph) const;
+    std::array<int, 2> find_node_by_edge(int edge) const;
 
 private:
     std::vector<std::vector<int>> _points;
@@ -37,6 +38,7 @@ private:
     std::vector<std::array<int, 2>> _cell_points;
     std::vector<int> _cell_edges;
     int _n_points;
+    std::vector<std::array<int, 2>> _edge_nodes;
     // int _n_cells;
 };
 } // namespace bflow

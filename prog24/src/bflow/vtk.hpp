@@ -5,11 +5,11 @@
 
 namespace bflow
 {
+std::vector<Point2> generate_nodes_coo(const VesselGraph& graph);
 class GridSaver
 {
 public:
-    // GridSaver(const GraphGrid &grid);
-    GridSaver(const GraphGrid &grid, const std::vector<Point2> &nodes_coo);
+    GridSaver(const GraphGrid& grid, const std::vector<Point2>& nodes_coo);
     void save_area(std::string filename) const;
 
 private:

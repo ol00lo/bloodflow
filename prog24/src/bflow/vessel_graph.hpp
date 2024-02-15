@@ -11,7 +11,7 @@ namespace bflow
 class VesselGraph
 {
 public:
-    VesselGraph(const std::vector<std::vector<int>> &node, const std::vector<double> &len);
+    VesselGraph(const std::vector<std::vector<int>>& tab_node_edges, const std::vector<double>& edge_lens);
     std::array<int, 2> tab_edge_node(int iedge) const;
     std::vector<int> tab_node_edge(int inode) const;
     int find_edge_by_nodes(int inode, int jnode) const;

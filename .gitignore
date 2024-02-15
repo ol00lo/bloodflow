@@ -19,3 +19,5 @@ build/
 prog/.vscode/
 a.gdb
 .syntastic*
+prog24/
+.xml

@@ -4,6 +4,7 @@ set (SRC
 	tests/graph_test.cpp
 	tests/grid_test.cpp
 	tests/vtk_test.cpp
+	tests/test_utils.cpp
 	bflow/vessel_graph.cpp
 	bflow/graph_grid.cpp
 	bflow/vtk.cpp

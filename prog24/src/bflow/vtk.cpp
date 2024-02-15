@@ -1,121 +1,66 @@
 #include "vtk.hpp"
+#include <algorithm>
 #include <cmath>
 #include <fstream>
 #include <sstream>
 #define PI 3.1415926
 
 using namespace bflow;
-//
-// GridSaver::GridSaver(const GraphGrid &grid)
-//{
-//    _points.resize(grid.n_points());
-//
-//    Point2 zero;
-//    zero.x = 0.0;
-//    zero.y = 0.0;
-//    _points[0] = zero;
-//
-//    double angle = 0.0;
-//    double len = 0.0;
-//    int edge = 0;
-//
-//    for (int cell = 0; cell < grid.n_cells(); ++cell)
-//    {
-//        std::array<int, 2> ipoints = grid.tab_cell_point(cell);
-//        Point2 c_point_old = _points[ipoints[0]];
-//        c_point_old.y = _points[grid.tab_cell_point(cell)[0]].y;
-//
-//        std::vector<int> for_cells(ipoints.begin(), ipoints.end());
-//        _cells.push_back(for_cells);
-//
-//        if (grid.tab_cell_point(cell)[0] == 0)
-//        {
-//            edge++;
-//            len = grid.find_cell_length(cell);
-//            angle = PI / grid.tab_point_cell(grid.tab_cell_point(cell)[0]).size();
-//        }
-//        else if (grid.find_edge_by_cell(cell) != grid.find_edge_by_cell(cell - 1))
-//        {
-//            edge++;
-//            len = grid.find_cell_length(cell);
-//            angle = PI / grid.tab_point_cell(grid.tab_cell_point(cell)[0]).size();
-//            if (edge >= grid.tab_point_cell(grid.tab_cell_point(cell)[0]).size())
-//            {
-//                edge = 1;
-//            }
-//        }
-//
-//        if (grid.tab_cell_point(cell)[0] == 0)
-//        {
-//            angle = PI / (grid.tab_point_cell(grid.tab_cell_point(cell)[0]).size() + 1);
-//        }
-//
-//        Point2 c_point_new;
-//        c_point_new.x = c_point_old.x + len * std::cos(PI - edge * angle);
-//        c_point_new.y = c_point_old.y + len * std::sin(PI - edge * angle);
-//
-//        int point = grid.tab_cell_point(cell)[1];
-//        _points[point] = c_point_new;
-//    }
-//}
 
-GridSaver::GridSaver(const GraphGrid &grid, const std::vector<Point2> &nodes_coo)
+std::vector<Point2> bflow::generate_nodes_coo(const VesselGraph& graph)
 {
-    double angle = 0.0;
-    int edge = 0;
-    int cell = 0;
-    _points.push_back(nodes_coo[0]);
-    for (int node = 0; node < nodes_coo.size(); ++node)
+    std::vector<Point2> nodes;
+    Point2 old_point = {0.0, 0.0};
+    nodes.push_back(old_point);
+
+    int edges = -1;
+    for (int node = 0; node < graph.n_nodes(); ++node)
     {
-        int size = grid.tab_point_cell(node).size() - 1;
-        if (node == 0)
-            size++;
-        if (size > 0)
+        old_point = nodes[node];
+        std::vector<int> nedges = graph.tab_node_edge(node);
+        std::sort(nedges.begin(), nedges.end());
+        int size = nedges.size();
+
+        int i = 1;
+        for (int edge = 0; edge < size; ++edge)
         {
-            int for_cells0 = 0;
-            for (auto it = _points.begin(); it < _points.end(); it++)
+            if (nedges[edge] > edges)
             {
-                Point2 p = *it;
-                if (p.x == nodes_coo[node].x && p.y == nodes_coo[node].y)
-                {
-                    for_cells0 = it - _points.begin();
-                }
-            }
-            int i = 1;
-            for (int ed = 0; ed < size; ++ed)
-            {
-                angle = PI - PI * i / (size + 1);
-                Point2 cpoint_old = nodes_coo[node];
-
-                Point2 cpoint_new;
-
-                std::vector<int> points_by_edge = grid.points_by_edge(edge);
-
-                std::array<int, 2> for_cells;
-                for_cells[0] = for_cells0;
-                for_cells[1] = _points.size();
-
-                _cells.push_back(for_cells);
-
-                for (int j = 0; j < points_by_edge.size() - 2; ++j)
-                {
-                    std::array<int, 2> for_cells;
-                    for_cells[0] = _points.size();
-                    for_cells[1] = _points.size() + 1;
-                    _cells.push_back(for_cells);
-                    double len = grid.find_cell_length(cell);
-                    cpoint_new.x = cpoint_old.x + len * std::cos(angle);
-                    cpoint_new.y = cpoint_old.y + len * std::sin(angle);
-                    _points.push_back(cpoint_new);
-                    cell++;
-                }
-
-                cell++;
-                edge++;
+                edges++;
+                Point2 new_point;
+                double len = graph.find_length(edges);
+                double angle = (node == 0) ? (PI - PI * i / (size + 1)) : (PI - PI * i / size);
+                new_point.x = old_point.x + len * std::cos(angle);
+                new_point.y = old_point.y + len * std::sin(angle);
+                nodes.push_back(new_point);
                 i++;
-                _points.push_back(nodes_coo[edge]);
             }
         }
+    }
+
+    return nodes;
+}
+
+GridSaver::GridSaver(const GraphGrid& grid, const std::vector<Point2>& nodes_coo)
+{
+    for (int edge = 0; edge < grid.n_edges(); edge++)
+    {
+        std::vector<int> points_by_edge = grid.points_by_edge(edge);
+        std::array<int, 2> nodes = grid.find_node_by_edge(edge);
+        _points.push_back(nodes_coo[nodes[0]]);
+        int cells = points_by_edge.size() - 1;
+        double i = 1;
+        for (int point = 0; point < cells; point++)
+        {
+            Point2 new_point;
+            new_point.x = (1 - i / cells) * nodes_coo[nodes[0]].x + (i / cells) * nodes_coo[nodes[1]].x;
+            new_point.y = (1 - i / cells) * nodes_coo[nodes[0]].y + (i / cells) * nodes_coo[nodes[1]].y;
+            _points.push_back(new_point);
+            i++;
+            int a = _points.size();
+            _cells.push_back({a - 2, a - 1});
+        }
+        _points.push_back(nodes_coo[nodes[1]]);
     }
 }
 
