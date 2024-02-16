@@ -19,5 +19,4 @@ build/
 prog/.vscode/
 a.gdb
 .syntastic*
-prog24/
-.xml
+prog24/cppcheck_result.xml

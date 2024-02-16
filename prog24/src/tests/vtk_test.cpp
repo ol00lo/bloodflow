@@ -1,25 +1,13 @@
+#include "bflow/test_utils.hpp"
 #include "bflow/vessel_graph.hpp"
 #include "bflow/vtk.hpp"
 #include "catch.hpp"
-#include "tests/test_utils.cpp"
 #include <fstream>
 #include <iostream>
 #include <string>
 #include <vector>
 
 using namespace bflow;
-
-int string_count(std::string file_name)
-{
-    std::ifstream file(file_name);
-    int count = 0;
-    std::string line;
-    while (std::getline(file, line))
-    {
-        ++count;
-    }
-    return count;
-}
 
 TEST_CASE("simple test vtk0", "[gridsaver-0]")
 {

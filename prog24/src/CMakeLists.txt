@@ -13,5 +13,6 @@ set(HEADERS
 	bflow/vessel_graph.hpp
 	bflow/graph_grid.hpp
 	bflow/vtk.hpp
+	bflow/test_utils.hpp
 )
 add_executable(bflow_test ${SRC} ${HEADERS})
