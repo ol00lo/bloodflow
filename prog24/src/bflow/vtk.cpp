@@ -43,11 +43,12 @@ std::vector<Point2> bflow::generate_nodes_coo(const VesselGraph& graph)
 
 GridSaver::GridSaver(const GraphGrid& grid, const std::vector<Point2>& nodes_coo)
 {
+    _points.resize(grid.n_points());
     for (int iedge = 0; iedge < grid.n_edges(); iedge++)
     {
         std::vector<int> points_by_edge = grid.points_by_edge(iedge);
         std::array<int, 2> edge_nodes = grid.find_node_by_edge(iedge);
-        _points.push_back(nodes_coo[edge_nodes[0]]);
+        _points[points_by_edge[0]] = nodes_coo[edge_nodes[0]];
         int n_edge_cells = points_by_edge.size() - 1;
         int i = 1;
         for (int ipoint = 0; ipoint < n_edge_cells - 1; ipoint++)
@@ -56,14 +57,12 @@ GridSaver::GridSaver(const GraphGrid& grid, const std::vector<Point2>& nodes_coo
             double w = (double)i / n_edge_cells;
             new_point.x = (1 - w) * nodes_coo[edge_nodes[0]].x + w * nodes_coo[edge_nodes[1]].x;
             new_point.y = (1 - w) * nodes_coo[edge_nodes[0]].y + w * nodes_coo[edge_nodes[1]].y;
-            _points.push_back(new_point);
+            _points[points_by_edge[i]] = new_point;
+            _cells.push_back({points_by_edge[i - 1], points_by_edge[i]});
             i++;
-            int a = _points.size();
-            _cells.push_back({a - 2, a - 1});
         }
-        _points.push_back(nodes_coo[edge_nodes[1]]);
-        int a = _points.size();
-        _cells.push_back({a - 2, a- 1});
+        _points[points_by_edge[n_edge_cells]] = nodes_coo[edge_nodes[1]];
+        _cells.push_back({points_by_edge[i - 1], points_by_edge[i]});
     }
 }
 

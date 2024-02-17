@@ -1,4 +1,4 @@
-#include "bflow/test_utils.hpp"
+#include "tests/test_utils.hpp"
 #include "bflow/vessel_graph.hpp"
 #include "bflow/vtk.hpp"
 #include "catch.hpp"
@@ -20,7 +20,7 @@ TEST_CASE("simple test vtk0", "[gridsaver-0]")
     vtk1.save_area("first_try.vtk");
 
     int i = string_count("first_try.vtk");
-    CHECK(i == 21);
+    CHECK(i == 20);
 }
 
 TEST_CASE("simple test vtk1", "[gridsaver-1]")
@@ -34,7 +34,7 @@ TEST_CASE("simple test vtk1", "[gridsaver-1]")
     vtk1.save_area("first_try.vtk");
 
     int i = string_count("first_try.vtk");
-    CHECK(i == 28);
+    CHECK(i == 23);
 }
 
 TEST_CASE("simple test vtk2", "[gridsaver-2]")
@@ -48,7 +48,7 @@ TEST_CASE("simple test vtk2", "[gridsaver-2]")
     vtk1.save_area("first_try.vtk");
 
     int i = string_count("first_try.vtk");
-    CHECK(i == 27);
+    CHECK(i == 20);
 }
 
 TEST_CASE("simple test vtk3", "[gridsaver-3]")
@@ -62,7 +62,7 @@ TEST_CASE("simple test vtk3", "[gridsaver-3]")
     vtk1.save_area("first_try.vtk");
 
     int i = string_count("first_try.vtk");
-    CHECK(i == 42);
+    CHECK(i == 35);
 }
 
 TEST_CASE("simple test vtk4", "[gridsaver-4]")
@@ -77,5 +77,5 @@ TEST_CASE("simple test vtk4", "[gridsaver-4]")
     vtk1.save_area("first_try.vtk");
 
     int i = string_count("first_try.vtk");
-    CHECK(i == 483);
+    CHECK(i == 464);
 }
