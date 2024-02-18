@@ -4,7 +4,7 @@
 
 using namespace bflow;
 
-VesselGraph::VesselGraph(const std::vector<std::vector<int>> &edges, const std::vector<double> &len)
+VesselGraph::VesselGraph(const std::vector<std::vector<int>>& edges, const std::vector<double>& len)
 {
     if (edges.size() < 2 || len.size() < 1 || edges.size() - len.size() != 1)
         throw std::runtime_error("Incorrect input");
