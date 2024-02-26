@@ -34,20 +34,20 @@ GraphGrid::GraphGrid(const VesselGraph& graph, double h)
 
     std::set<int> m_points;
     for (size_t i = 0; i < _points.size(); ++i)
-        for (size_t j = 0; j < _points[i].size(); ++j)
-        {
-            m_points.insert(_points[i][j]);
-        }
+    for (size_t j = 0; j < _points[i].size(); ++j)
+    {
+        m_points.insert(_points[i][j]);
+    }
     _n_points = m_points.size();
 
     for (size_t i = 0; i < _points.size(); ++i)
-        for (size_t j = 1; j < _points[i].size(); ++j)
-        {
-            std::array<int, 2> points;
-            points[0] = _points[i][j - 1];
-            points[1] = _points[i][j];
-            _cell_points.push_back(points);
-        }
+    for (size_t j = 1; j < _points[i].size(); ++j)
+    {
+        std::array<int, 2> points;
+        points[0] = _points[i][j - 1];
+        points[1] = _points[i][j];
+        _cell_points.push_back(points);
+    }
 
     _point_cells.resize(_n_points);
     for (int cell = 0; cell < _cell_points.size(); ++cell)
@@ -57,10 +57,10 @@ GraphGrid::GraphGrid(const VesselGraph& graph, double h)
     }
 
     for (size_t i = 0; i < _points.size(); ++i)
-        for (size_t j = 1; j < _points[i].size(); ++j)
-        {
-            _cell_edges.push_back(i);
-        }
+    for (size_t j = 1; j < _points[i].size(); ++j)
+    {
+        _cell_edges.push_back(i);
+    }
 }
 
 int GraphGrid::n_points() const
