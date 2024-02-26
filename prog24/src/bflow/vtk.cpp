@@ -91,3 +91,30 @@ void GridSaver::save_area(std::string filename) const
     for (size_t i = 0; i < _cells.size(); ++i)
         fs << 3 << std::endl;
 }
+
+void GridSaver::save_vtk_point_data(const std::vector<double>& vertex_data, std::string filename)
+{
+    std::fstream fs(filename, std::ios::app);
+
+    fs << "POINT_DATA  " << _points.size() << std::endl;
+    fs << "SCALARS "
+       << "point_data"
+       << " double 1" << std::endl;
+    fs << "LOOKUP_TABLE default" << std::endl;
+
+    for (size_t i = 0; i < _points.size(); ++i)
+        fs << vertex_data[i] << std::endl;
+}
+
+void GridSaver::save_vtk_cell_data(const std::vector<double>& cell_data, std::string filename)
+{
+    std::fstream fs(filename, std::ios::app);
+
+    fs << "CELL_DATA  " << _cells.size() << std::endl;
+    fs << "SCALARS "
+       << "cell_data"
+       << " double 1" << std::endl;
+    fs << "LOOKUP_TABLE default" << std::endl;
+    for (size_t i = 0; i < _cells.size(); ++i)
+        fs << cell_data[i] << std::endl;
+}
