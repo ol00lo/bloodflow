@@ -2,10 +2,26 @@
 #include <algorithm>
 #include <cmath>
 #include <fstream>
+#include <string>
 #include <sstream>
 #define PI 3.1415926
 
 using namespace bflow;
+
+void Dump(std::string to, std::string from)
+{
+    std::ofstream ofs(to.c_str(), std::ios::binary);
+    std::ifstream ifs(from.c_str(), std::ios::binary);
+    if (ifs.is_open() && ofs.is_open())
+    {
+        ofs << ifs.rdbuf();
+    }
+    else
+    {
+        std::cerr << "Can't open file(s)\n";
+        std::exit(EXIT_FAILURE);
+    }
+}
 
 std::vector<Point2> bflow::generate_nodes_coo(const VesselGraph& graph)
 {
@@ -39,6 +55,31 @@ std::vector<Point2> bflow::generate_nodes_coo(const VesselGraph& graph)
     }
 
     return nodes;
+}
+
+std::vector<Point2> bflow::generate_points_coo(const GraphGrid& grid, const std::vector<Point2>& nodes_coo)
+{
+    std::vector<Point2> points_coo;
+    points_coo.resize(grid.n_points());
+    for (int iedge = 0; iedge < grid.n_edges(); iedge++)
+    {
+        std::vector<int> points_by_edge = grid.points_by_edge(iedge);
+        std::array<int, 2> edge_nodes = grid.find_node_by_edge(iedge);
+        points_coo[points_by_edge[0]] = nodes_coo[edge_nodes[0]];
+        int n_edge_cells = points_by_edge.size() - 1;
+        int i = 1;
+        for (int ipoint = 0; ipoint < n_edge_cells - 1; ipoint++)
+        {
+            Point2 new_point;
+            double w = (double)i / n_edge_cells;
+            new_point.x = (1 - w) * nodes_coo[edge_nodes[0]].x + w * nodes_coo[edge_nodes[1]].x;
+            new_point.y = (1 - w) * nodes_coo[edge_nodes[0]].y + w * nodes_coo[edge_nodes[1]].y;
+            points_coo[points_by_edge[i]] = new_point;
+            i++;
+        }
+        points_coo[points_by_edge[n_edge_cells]] = nodes_coo[edge_nodes[1]];
+    }
+    return points_coo;
 }
 
 GridSaver::GridSaver(const GraphGrid& grid, const std::vector<Point2>& nodes_coo)
@@ -92,29 +133,102 @@ void GridSaver::save_area(std::string filename) const
         fs << 3 << std::endl;
 }
 
-void GridSaver::save_vtk_point_data(const std::vector<double>& vertex_data, std::string filename)
+std::vector<double> bflow::result_data(std::vector<Point2> points_coo)
 {
-    std::fstream fs(filename, std::ios::app);
-
-    fs << "POINT_DATA  " << _points.size() << std::endl;
-    fs << "SCALARS "
-       << "point_data"
-       << " double 1" << std::endl;
-    fs << "LOOKUP_TABLE default" << std::endl;
-
-    for (size_t i = 0; i < _points.size(); ++i)
-        fs << vertex_data[i] << std::endl;
+    std::vector<double> res_dat;
+    res_dat.resize(points_coo.size());
+    for (int i = 0; i < points_coo.size(); ++i)
+    {
+        Point2 p = points_coo[i];
+        double r = sqrt(p.x *p.x + p.y*p.y);
+        res_dat[i] = cos(r / 5 * PI);
+    }
+    return res_dat;
 }
 
-void GridSaver::save_vtk_cell_data(const std::vector<double>& cell_data, std::string filename)
+void GridSaver::save_vtk_point_data(const std::vector<double>& vertex_data, std::string dataname, std::string filename)
 {
-    std::fstream fs(filename, std::ios::app);
+    std::ifstream fse(filename);
+    std::string str;
+    int count = 0;
+    int sum_str=0;
+    while (std::getline(fse, str))
+    {
+        sum_str++;
+        if (str.substr(0, 10) == "POINT_DATA")
+        {
+            count++;
+            break;
+        }
+    }
 
-    fs << "CELL_DATA  " << _cells.size() << std::endl;
-    fs << "SCALARS "
-       << "cell_data"
-       << " double 1" << std::endl;
-    fs << "LOOKUP_TABLE default" << std::endl;
-    for (size_t i = 0; i < _cells.size(); ++i)
-        fs << cell_data[i] << std::endl;
+    if (count == 0)
+    {
+        std::fstream fs(filename, std::ios::app);
+        fs << "POINT_DATA  " << _points.size() << std::endl;
+        fs << "SCALARS "
+                   << dataname
+                   << " double 1" << std::endl;
+        fs << "LOOKUP_TABLE default" << std::endl;
+
+        for (size_t i = 0; i < _points.size(); ++i)
+            fs << vertex_data[i] << std::endl;
+    }
+    else
+    {
+        std::ifstream infile(filename);
+        std::ofstream outfile("for.vtk");
+        std::string line;
+        for (int lineno = 0; std::getline(infile, line); lineno++)
+        {
+            if (lineno == sum_str + _points.size()+2)
+            {
+                outfile << "SCALARS " << dataname << " double 1" << std::endl;
+                outfile << "LOOKUP_TABLE default" << std::endl;
+
+                for (size_t i = 0; i < _points.size(); ++i)
+                    outfile << vertex_data[i] << std::endl;
+            }
+            outfile << line << std::endl;
+        }
+        Dump(filename, "for.vtk");
+        remove("for.vtk");
+    }
+}
+
+void GridSaver::save_vtk_cell_data(const std::vector<double>& cell_data, std::string dataname, std::string filename)
+{
+    std::ifstream fse(filename);
+    std::string str;
+    int count = 0;
+    int sum_str = 0;
+    while (std::getline(fse, str))
+    {
+        sum_str++;
+        if (str.substr(0, 9) == "CELL_DATA")
+        {
+            count++;
+            break;
+        }
+    }
+
+    if (count == 0)
+    {
+        std::fstream fs(filename, std::ios::app);
+
+        fs << "CELL_DATA  " << _cells.size() << std::endl;
+        fs << "SCALARS  " << dataname << " double 1" << std::endl;
+        fs << "LOOKUP_TABLE default" << std::endl;
+        for (size_t i = 0; i < _cells.size(); ++i)
+            fs << cell_data[i] << std::endl;
+    }
+    else
+    {
+        std::fstream fs(filename, std::ios::app);
+
+        fs << "SCALARS  " << dataname << " double 1" << std::endl;
+        fs << "LOOKUP_TABLE default" << std::endl;
+        for (size_t i = 0; i < _cells.size(); ++i)
+            fs << cell_data[i] << std::endl;
+    }
 }

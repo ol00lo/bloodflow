@@ -48,9 +48,12 @@ TEST_CASE("simple test vtk2", "[gridsaver-2]")
 
     std::vector<double> func1 = {1.0, 2.0, 3.0, 4.0, 5.0};
     std::vector<double> func2 = {1.0, 2.0, 3.0, 4.0};
-    vtk1.save_vtk_point_data(func1, "first_try.vtk");
-    vtk1.save_vtk_cell_data(func2, "first_try.vtk");
-  
+    std::vector<double> f1 = result_data(generate_points_coo(grid1, nodes_coo));
+    vtk1.save_vtk_point_data(func1,"d1", "first_try.vtk");
+    vtk1.save_vtk_cell_data(func2,"d1", "first_try.vtk");
+    vtk1.save_vtk_point_data(f1, "d2", "first_try.vtk");
+    vtk1.save_vtk_cell_data(func2,"d2", "first_try.vtk");
+
     int i = string_count("first_try.vtk");
     CHECK(i == 35);
 }
@@ -86,8 +89,10 @@ TEST_CASE("simple test vtk4", "[gridsaver-4]")
     for (int i = 0; i < grid1.n_cells(); i++)
         func2.push_back(i);
 
-    vtk1.save_vtk_point_data(func1, "first_try.vtk");
-    vtk1.save_vtk_cell_data(func2, "first_try.vtk");
+    std::vector<double> f1 = result_data(generate_points_coo(grid1, nodes_coo));
+    vtk1.save_vtk_point_data(func1, "d1", "first_try.vtk");
+    vtk1.save_vtk_cell_data(func2, "d2", "first_try.vtk");
+    vtk1.save_vtk_point_data(f1, "d3", "first_try.vtk");
     int i = string_count("first_try.vtk");
     CHECK(i == 775);
 }
