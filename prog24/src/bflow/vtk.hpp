@@ -7,7 +7,6 @@ namespace bflow
 {
 std::vector<Point2> generate_nodes_coo(const VesselGraph& graph);
 std::vector<Point2> generate_points_coo(const GraphGrid& grid, const std::vector<Point2>& nodes_coo);
-std::vector<double> result_data(std::vector<Point2> points_coo);
 
 class GridSaver
 {

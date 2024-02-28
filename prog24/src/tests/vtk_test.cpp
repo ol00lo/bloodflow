@@ -50,12 +50,13 @@ TEST_CASE("simple test vtk2", "[gridsaver-2]")
     std::vector<double> func2 = {1.0, 2.0, 3.0, 4.0};
     std::vector<double> f1 = result_data(generate_points_coo(grid1, nodes_coo));
     vtk1.save_vtk_point_data(func1,"d1", "first_try.vtk");
-    vtk1.save_vtk_cell_data(func2,"d1", "first_try.vtk");
-    vtk1.save_vtk_point_data(f1, "d2", "first_try.vtk");
     vtk1.save_vtk_cell_data(func2,"d2", "first_try.vtk");
+    vtk1.save_vtk_point_data(func1,"d3", "first_try.vtk");
+    vtk1.save_vtk_point_data(f1, "d4", "first_try.vtk");
+    vtk1.save_vtk_cell_data(func2,"d5", "first_try.vtk");
 
     int i = string_count("first_try.vtk");
-    CHECK(i == 35);
+    CHECK(i == 55);
 }
 
 TEST_CASE("simple test vtk3", "[gridsaver-3]")
@@ -94,5 +95,5 @@ TEST_CASE("simple test vtk4", "[gridsaver-4]")
     vtk1.save_vtk_cell_data(func2, "d2", "first_try.vtk");
     vtk1.save_vtk_point_data(f1, "d3", "first_try.vtk");
     int i = string_count("first_try.vtk");
-    CHECK(i == 775);
+    CHECK(i == 930);
 }

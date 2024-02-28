@@ -8,19 +8,79 @@
 
 using namespace bflow;
 
-void Dump(std::string to, std::string from)
+std::vector<std::string> to_strings(std::string file_name)
 {
-    std::ofstream ofs(to.c_str(), std::ios::binary);
-    std::ifstream ifs(from.c_str(), std::ios::binary);
-    if (ifs.is_open() && ofs.is_open())
+    std::vector<std::string> res;
+    std::ifstream in(file_name);
+    std::string str;
+    while (std::getline(in, str))
     {
-        ofs << ifs.rdbuf();
+        res.push_back(str);
     }
+    return res;
+}
+
+void write_new_data(std::string filename, std::string type, std::string dataname, int size,
+                    const std::vector<double>& data)
+{
+    std::fstream fs(filename, std::ios::app);
+    fs << type << " " << size << std::endl;
+    fs << "SCALARS " << dataname << " double 1" << std::endl;
+    fs << "LOOKUP_TABLE default" << std::endl;
+    for (size_t i = 0; i < size; ++i)
+        fs << data[i] << std::endl;
+}
+
+void write_not_new_data(std::string filename, int lines_count, std::string dataname, int size, std::vector<double> data)
+{
+    std::vector<std::string> help;
+    help = to_strings(filename);
+    if (help.size() <= lines_count + size + 2)
+    {
+        std::fstream outfile(filename, std::ios::app);
+        outfile << "SCALARS " << dataname << " double 1" << std::endl;
+        outfile << "LOOKUP_TABLE default" << std::endl;
+
+        for (size_t i = 0; i < size; ++i)
+            outfile << data[i] << std::endl;
+        return;
+    }
+
+    std::ofstream outfile(filename);
+    for (int line = 0; line < help.size(); line++)
+    {
+        if (line == lines_count + size + 2)
+        {
+            outfile << "SCALARS " << dataname << " double 1" << std::endl;
+            outfile << "LOOKUP_TABLE default" << std::endl;
+
+            for (size_t i = 0; i < size; ++i)
+                outfile << data[i] << std::endl;
+        }
+        outfile << help[line] << std::endl;
+    }
+}
+
+int is_in_file(std::string filename, std::string data)
+{
+    int size = data.size();
+    std::ifstream fse(filename);
+    std::string str;
+    bool count = false;
+    int sum_str = 0;
+    while (std::getline(fse, str))
+    {
+        sum_str++;
+        if (str.substr(0, size) == data)
+        {
+            count = true;
+            break;
+        }
+    }
+    if (count == true)
+        return sum_str;
     else
-    {
-        std::cerr << "Can't open file(s)\n";
-        std::exit(EXIT_FAILURE);
-    }
+        return -1;
 }
 
 std::vector<Point2> bflow::generate_nodes_coo(const VesselGraph& graph)
@@ -133,102 +193,21 @@ void GridSaver::save_area(std::string filename) const
         fs << 3 << std::endl;
 }
 
-std::vector<double> bflow::result_data(std::vector<Point2> points_coo)
-{
-    std::vector<double> res_dat;
-    res_dat.resize(points_coo.size());
-    for (int i = 0; i < points_coo.size(); ++i)
-    {
-        Point2 p = points_coo[i];
-        double r = sqrt(p.x *p.x + p.y*p.y);
-        res_dat[i] = cos(r / 5 * PI);
-    }
-    return res_dat;
-}
-
 void GridSaver::save_vtk_point_data(const std::vector<double>& vertex_data, std::string dataname, std::string filename)
 {
-    std::ifstream fse(filename);
-    std::string str;
-    int count = 0;
-    int sum_str=0;
-    while (std::getline(fse, str))
-    {
-        sum_str++;
-        if (str.substr(0, 10) == "POINT_DATA")
-        {
-            count++;
-            break;
-        }
-    }
-
-    if (count == 0)
-    {
-        std::fstream fs(filename, std::ios::app);
-        fs << "POINT_DATA  " << _points.size() << std::endl;
-        fs << "SCALARS "
-                   << dataname
-                   << " double 1" << std::endl;
-        fs << "LOOKUP_TABLE default" << std::endl;
-
-        for (size_t i = 0; i < _points.size(); ++i)
-            fs << vertex_data[i] << std::endl;
-    }
+    int str_to_data = is_in_file(filename, "POINT_DATA");
+    if (str_to_data==-1)
+        write_new_data(filename, "POINT_DATA", dataname, _points.size(), vertex_data);
     else
-    {
-        std::ifstream infile(filename);
-        std::ofstream outfile("for.vtk");
-        std::string line;
-        for (int lineno = 0; std::getline(infile, line); lineno++)
-        {
-            if (lineno == sum_str + _points.size()+2)
-            {
-                outfile << "SCALARS " << dataname << " double 1" << std::endl;
-                outfile << "LOOKUP_TABLE default" << std::endl;
-
-                for (size_t i = 0; i < _points.size(); ++i)
-                    outfile << vertex_data[i] << std::endl;
-            }
-            outfile << line << std::endl;
-        }
-        Dump(filename, "for.vtk");
-        remove("for.vtk");
-    }
+        write_not_new_data(filename, str_to_data, dataname,_points.size(), vertex_data);
 }
 
 void GridSaver::save_vtk_cell_data(const std::vector<double>& cell_data, std::string dataname, std::string filename)
 {
-    std::ifstream fse(filename);
-    std::string str;
-    int count = 0;
-    int sum_str = 0;
-    while (std::getline(fse, str))
-    {
-        sum_str++;
-        if (str.substr(0, 9) == "CELL_DATA")
-        {
-            count++;
-            break;
-        }
-    }
+    int str_to_data = is_in_file(filename, "CELL_DATA");
 
-    if (count == 0)
-    {
-        std::fstream fs(filename, std::ios::app);
-
-        fs << "CELL_DATA  " << _cells.size() << std::endl;
-        fs << "SCALARS  " << dataname << " double 1" << std::endl;
-        fs << "LOOKUP_TABLE default" << std::endl;
-        for (size_t i = 0; i < _cells.size(); ++i)
-            fs << cell_data[i] << std::endl;
-    }
+    if (str_to_data == -1)
+        write_new_data(filename, "CELL_DATA", dataname, _cells.size(), cell_data);
     else
-    {
-        std::fstream fs(filename, std::ios::app);
-
-        fs << "SCALARS  " << dataname << " double 1" << std::endl;
-        fs << "LOOKUP_TABLE default" << std::endl;
-        for (size_t i = 0; i < _cells.size(); ++i)
-            fs << cell_data[i] << std::endl;
-    }
+        write_not_new_data(filename, str_to_data, dataname, _cells.size(), cell_data);
 }
