@@ -189,7 +189,7 @@ void GridSaver::save_vtk_point_data(const std::vector<double>& vertex_data, std:
     if (vertex_data.size() != _points.size())
         throw std::runtime_error("incorrect number of vertex data");
 
-    int str_to_data = is_in_file(filename, "POINT_DATA");
+    int str_to_data = find_data_in_file(filename, "POINT_DATA");
     if (str_to_data == -1)
         write_new_data(filename, "POINT_DATA", dataname, _points.size(), vertex_data);
     else
@@ -201,7 +201,7 @@ void GridSaver::save_vtk_cell_data(const std::vector<double>& cell_data, std::st
     if (cell_data.size() != _cells.size())
         throw std::runtime_error("incorrect number of cell data");
 
-    int str_to_data = is_in_file(filename, "CELL_DATA");
+    int str_to_data = find_data_in_file(filename, "CELL_DATA");
 
     if (str_to_data == -1)
         write_new_data(filename, "CELL_DATA", dataname, _cells.size(), cell_data);
