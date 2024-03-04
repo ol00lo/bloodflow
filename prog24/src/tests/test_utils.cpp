@@ -23,3 +23,16 @@ std::vector<double> result_data(const std::vector<bflow::Point2>& points_coo)
     }
     return res_dat;
 }
+
+std::vector<double> distance_from_zero(bflow::GraphGrid grid)
+{
+    std::vector<double> res(grid.n_points());
+    double len = 0.0;
+    res[0] = len;
+    for (int i = 1; i < res.size(); i++)
+    {
+        len += grid.find_cell_length(i);
+        res.push_back(len);
+    }
+    return res;
+}

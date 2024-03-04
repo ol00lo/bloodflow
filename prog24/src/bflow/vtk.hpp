@@ -16,6 +16,9 @@ public:
     void save_vtk_point_data(const std::vector<double>& vertex_data, std::string dataname, std::string filename);
     void save_vtk_cell_data(const std::vector<double>& cell_data, std::string dataname, std::string filename);
 
+    void save_nonstat_vtkseries(double time, double timestep, const std::vector<double>& res, std::string dataname,
+                                std::string filename);
+
 private:
     std::vector<Point2> _points;
     std::vector<std::array<int, 2>> _cells;

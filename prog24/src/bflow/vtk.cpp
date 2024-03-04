@@ -4,6 +4,7 @@
 #include <fstream>
 #include <sstream>
 #include <string>
+#include <iomanip>
 #define PI 3.1415926
 
 using namespace bflow;
@@ -207,4 +208,54 @@ void GridSaver::save_vtk_cell_data(const std::vector<double>& cell_data, std::st
         write_new_data(filename, "CELL_DATA", dataname, _cells.size(), cell_data);
     else
         write_not_new_data(filename, str_to_data, dataname, _cells.size(), cell_data);
+}
+
+std::vector<double> for_nonstat(double t, std::vector<double> a)
+{
+    std::vector<double> res;
+    for (size_t i = 0; i < a.size(); ++i)
+    {
+        res.push_back(std::sin(2 * 3.1415 * a[i] + t));
+    }
+    return res;
+}
+
+void GridSaver::save_nonstat_vtkseries(double time, double timestep, const std::vector<double>& data, std::string dataname, std::string filename)
+{
+    std::string cur_file;
+    std::ostringstream oss;
+
+    double t = 0.0;
+    int i = 0;
+    while (t < time)
+    {
+        std::vector<double> res = for_nonstat(t, data);
+        std::ostringstream fn;
+        fn << std::setfill('0') << std::setw(4) << i << ".vtk";
+        i++;
+        oss << "    {\"name\": \"" << fn.str() << "\", \"time\": " << t << "}"
+            << "," << std::endl;
+        save_area(fn.str());
+        save_vtk_point_data(res, dataname, fn.str());
+
+        t += timestep;
+    }
+
+    std::vector<double> res = for_nonstat(t, data);
+    std::ostringstream fn;
+    fn << std::setfill('0') << std::setw(4) << i << ".vtk";
+    oss << "    {\"name\": \"" << fn.str() << "\", \"time\": " << t << "}";
+
+    cur_file += oss.str();
+    save_area(fn.str());
+    save_vtk_point_data(res, dataname, fn.str());
+
+    std::ofstream ofs(filename + ".vtk.series");
+
+    ofs << "{" << std::endl;
+    ofs << "  \"file-series-version\" : \"1.0\"," << std::endl;
+    ofs << "  \"files\" : [" << std::endl;
+    ofs << cur_file << std::endl;
+    ofs << "  ]" << std::endl;
+    ofs << "}" << std::endl;
 }
