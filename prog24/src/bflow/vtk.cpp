@@ -63,7 +63,7 @@ void write_not_new_data(std::string filename, int lines_count, std::string datan
     }
 }
 
-int is_in_file(std::string filename, std::string data)
+int find_data_in_file(std::string filename, std::string data)
 {
     int size = data.size();
     std::ifstream fse(filename);
