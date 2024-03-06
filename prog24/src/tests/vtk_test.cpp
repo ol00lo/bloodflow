@@ -49,12 +49,12 @@ TEST_CASE("simple test vtk2", "[gridsaver-2]")
     std::vector<double> func1 = {1.0, 2.0, 3.0, 4.0, 5.0};
     std::vector<double> func2 = {1.0, 2.0, 3.0, 4.0};
     std::vector<double> f1 = result_data(generate_points_coo(grid1, nodes_coo));
-    //vtk1.save_vtk_point_data(func1,"d1", "first_try.vtk");
-    //vtk1.save_vtk_cell_data(func2,"d2", "first_try.vtk");
-    //vtk1.save_vtk_point_data(func1,"d3", "first_try.vtk");
-    //vtk1.save_vtk_point_data(f1, "d4", "first_try.vtk");
-    //vtk1.save_vtk_cell_data(func2,"d5", "first_try.vtk");
-    vtk1.save_nonstat_vtkseries(5, 1, func2, "d1", "second_try.vtk");
+    vtk1.save_vtk_point_data(func1,"d1", "first_try.vtk");
+    vtk1.save_vtk_cell_data(func2,"d2", "first_try.vtk");
+    vtk1.save_vtk_point_data(func1,"d3", "first_try.vtk");
+    vtk1.save_vtk_point_data(f1, "d4", "first_try.vtk");
+    vtk1.save_vtk_cell_data(func2,"d5", "first_try.vtk");
+    //vtk1.save_nonstat_vtkseries(5, 1, func2, "d1", "second_try.vtk");
     int i = string_count("first_try.vtk");
     CHECK(i == 55);
 }
@@ -90,13 +90,42 @@ TEST_CASE("simple test vtk4", "[gridsaver-4]")
     for (int i = 0; i < grid1.n_cells(); i++)
         func2.push_back(i);
 
-    //std::vector<double> f1 = result_data(generate_points_coo(grid1, nodes_coo));
-    std::vector<double> f2 = distance_from_zero(grid1);
-    //vtk1.save_vtk_point_data(func1, "d1", "first_try.vtk");
-    //vtk1.save_vtk_cell_data(func2, "d2", "first_try.vtk");
-    //vtk1.save_vtk_point_data(f1, "d3", "first_try.vtk");
+    std::vector<double> f1 = result_data(generate_points_coo(grid1, nodes_coo));
+    vtk1.save_vtk_point_data(func1, "d1", "first_try.vtk");
+    vtk1.save_vtk_cell_data(func2, "d2", "first_try.vtk");
+    vtk1.save_vtk_point_data(f1, "d3", "first_try.vtk");
 
-    vtk1.save_nonstat_vtkseries(100, 1, f2, "d1", "second_try");
     int i = string_count("first_try.vtk");
     CHECK(i == 930);
+}
+
+
+TEST_CASE("nonstat", "[nonstat-1]")
+{
+    std::vector<std::vector<int>> node = {{0, 1, 2}, {0, 4, 3}, {1, 5, 6, 7}, {2, 8, 9}, {3}, {4},
+                                          {5},       {6},       {7},          {8},       {9}};
+    std::vector<double> ed = {2.82, 4.0, 3.6, 3.16, 2.24, 3.6, 3.0, 2.24, 2.24, 3.6};
+    VesselGraph gr1(node, ed);
+    GraphGrid grid1(gr1, 0.2);
+    std::vector<Point2> nodes_coo = generate_nodes_coo(gr1);
+
+    double tend = 100;
+    double tau = 1;
+    NonstatGridSaver saver(grid1, nodes_coo, "second_try"); 
+
+    for (double t = 0; t <= tend; t += tau)
+    {
+        std::vector<double> point_data = find_point_data(generate_points_coo(grid1, nodes_coo), t);
+        std::vector<double> for_cell;
+        for (int i = 0; i < grid1.n_cells(); i++)
+        {
+            for_cell.push_back(grid1.find_cell_length(i));
+        }
+        std::vector<double> cell_data = find_cell_data(for_cell,t);
+
+        saver.new_time_step(t);                         
+        saver.save_vtk_point_data(point_data, "d1");
+        saver.add_in_series();
+        saver.save_vtk_cell_data(cell_data, "d2");
+    }
 }

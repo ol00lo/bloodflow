@@ -24,7 +24,7 @@ std::vector<double> result_data(const std::vector<bflow::Point2>& points_coo)
     return res_dat;
 }
 
-std::vector<double> distance_from_zero(bflow::GraphGrid grid)
+std::vector<double> distance_from_zero(const bflow::GraphGrid& grid)
 {
     std::vector<double> res(grid.n_points());
     double len = 0.0;
@@ -35,4 +35,25 @@ std::vector<double> distance_from_zero(bflow::GraphGrid grid)
         res.push_back(len);
     }
     return res;
+}
+
+std::vector<double> find_point_data(const std::vector<bflow::Point2>& points_coo, double t)
+{
+    std::vector<double> res_dat(points_coo.size());
+    for (int i = 0; i < points_coo.size(); ++i)
+    {
+        bflow::Point2 p = points_coo[i];
+        double r = sqrt(p.x * p.x + p.y * p.y);
+        res_dat[i] = t*cos(r*t / 5 * 3.1415) ;
+    }
+    return res_dat;
+}
+std::vector<double> find_cell_data(const std::vector<double>& cell, double t)
+{
+    std::vector<double> res_dat(cell.size());
+    for (int i = 0; i < cell.size(); ++i)
+    {
+        res_dat[i] = t*cos(cell[i]*t / 5 * 3.1415);
+    }
+    return res_dat;
 }

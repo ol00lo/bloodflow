@@ -16,13 +16,29 @@ public:
     void save_vtk_point_data(const std::vector<double>& vertex_data, std::string dataname, std::string filename);
     void save_vtk_cell_data(const std::vector<double>& cell_data, std::string dataname, std::string filename);
 
-    void save_nonstat_vtkseries(double time, double timestep, const std::vector<double>& res, std::string dataname,
-                                std::string filename);
-
 private:
     std::vector<Point2> _points;
     std::vector<std::array<int, 2>> _cells;
 };
+
+
+class NonstatGridSaver
+{
+public:
+    NonstatGridSaver(const GraphGrid& grid, const std::vector<Point2>& nodes_coo, std::string filename);
+    ~NonstatGridSaver();
+    void new_time_step(double t);
+    void save_vtk_point_data(std::vector<double>, std::string data_name);
+    void save_vtk_cell_data(std::vector<double>, std::string data_name);
+    void add_in_series();
+private:
+    GridSaver _vtk;
+    std::string _cur_file;
+    std::string _file_name;
+    std::string _files;
+};
+
+
 } // namespace bflow
 
 #endif
