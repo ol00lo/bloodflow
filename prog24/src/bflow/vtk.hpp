@@ -26,16 +26,17 @@ class NonstatGridSaver
 {
 public:
     NonstatGridSaver(const GraphGrid& grid, const std::vector<Point2>& nodes_coo, std::string filename);
-    ~NonstatGridSaver();
     void new_time_step(double t);
-    void save_vtk_point_data(std::vector<double>, std::string data_name);
-    void save_vtk_cell_data(std::vector<double>, std::string data_name);
-    void add_in_series();
+    void save_vtk_point_data(const std::vector<double>& data, std::string data_name);
+    void save_vtk_cell_data(const std::vector<double>& data, std::string data_name);
+    void add_in_series(const std::vector<std::string>& files);
 private:
     GridSaver _vtk;
     std::string _cur_file;
     std::string _file_name;
-    std::string _files;
+    std::string _series_name;
+    std::vector<std::string> _files;
+    int _files_count = 0;
 };
 
 

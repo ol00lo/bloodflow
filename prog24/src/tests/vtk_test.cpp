@@ -48,7 +48,7 @@ TEST_CASE("simple test vtk2", "[gridsaver-2]")
 
     std::vector<double> func1 = {1.0, 2.0, 3.0, 4.0, 5.0};
     std::vector<double> func2 = {1.0, 2.0, 3.0, 4.0};
-    std::vector<double> f1 = result_data(generate_points_coo(grid1, nodes_coo));
+    std::vector<double> f1 = test_point_data(generate_points_coo(grid1, nodes_coo));
     vtk1.save_vtk_point_data(func1,"d1", "first_try.vtk");
     vtk1.save_vtk_cell_data(func2,"d2", "first_try.vtk");
     vtk1.save_vtk_point_data(func1,"d3", "first_try.vtk");
@@ -90,7 +90,7 @@ TEST_CASE("simple test vtk4", "[gridsaver-4]")
     for (int i = 0; i < grid1.n_cells(); i++)
         func2.push_back(i);
 
-    std::vector<double> f1 = result_data(generate_points_coo(grid1, nodes_coo));
+    std::vector<double> f1 = test_point_data(generate_points_coo(grid1, nodes_coo));
     vtk1.save_vtk_point_data(func1, "d1", "first_try.vtk");
     vtk1.save_vtk_cell_data(func2, "d2", "first_try.vtk");
     vtk1.save_vtk_point_data(f1, "d3", "first_try.vtk");
@@ -112,20 +112,21 @@ TEST_CASE("nonstat", "[nonstat-1]")
     double tend = 100;
     double tau = 1;
     NonstatGridSaver saver(grid1, nodes_coo, "second_try"); 
-
+    std::vector<Point2> points_coo = generate_points_coo(grid1, nodes_coo);
+    std::vector<double> for_cell;
+    for (int i = 0; i < grid1.n_cells(); i++)
+        for_cell.push_back(grid1.find_cell_length(i));
+    
     for (double t = 0; t <= tend; t += tau)
     {
-        std::vector<double> point_data = find_point_data(generate_points_coo(grid1, nodes_coo), t);
-        std::vector<double> for_cell;
-        for (int i = 0; i < grid1.n_cells(); i++)
-        {
-            for_cell.push_back(grid1.find_cell_length(i));
-        }
-        std::vector<double> cell_data = find_cell_data(for_cell,t);
+        std::vector<double> point_data = test_point_data(points_coo, t);
+
+        std::vector<double> cell_data = test_cell_data(for_cell,t);
 
         saver.new_time_step(t);                         
         saver.save_vtk_point_data(point_data, "d1");
-        saver.add_in_series();
         saver.save_vtk_cell_data(cell_data, "d2");
     }
+    int i = string_count("second_try.vtk.series");
+    CHECK(i == 106);
 }
