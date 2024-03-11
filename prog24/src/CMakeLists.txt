@@ -10,7 +10,7 @@ set (SRC
 	bflow/vtk.cpp
 	bflow/matrix.cpp
 	tests/matrix_test.cpp
-	tests/debug.cpp
+	bflow/debug/printer.cpp
 )
 set(HEADERS
 	bflow/vessel_graph.hpp
@@ -18,6 +18,6 @@ set(HEADERS
 	bflow/vtk.hpp
 	tests/test_utils.hpp
 	bflow/matrix.hpp
-	tests/debug.hpp
+	bflow/debug/printer.hpp
 )
 add_executable(bflow_test ${SRC} ${HEADERS})

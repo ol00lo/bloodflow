@@ -3,6 +3,7 @@
 
 #include <map>
 #include <vector>
+constexpr int INVALID_INDEX = int(-1);
 
 namespace bflow
 {
@@ -11,46 +12,49 @@ class ISparseMatrix
 public:
     virtual ~ISparseMatrix() = default;
 
-    virtual size_t n_rows() const = 0;
-    virtual double value(size_t i, size_t j) const = 0;
-    virtual bool is_in_stencil(size_t i, size_t j) const = 0;
+    virtual int n_rows() const = 0;
+    virtual double value(int i, int j) const = 0;
+    virtual bool is_in_stencil(int i, int j) const = 0;
 
 protected:
-    void validate_ij(size_t i, size_t j) const;
+    void validate_ij(int i, int j) const;
 };
 
 class CsrMatrix : public ISparseMatrix
 {
 public:
-    CsrMatrix(const std::vector<size_t>& addr, const std::vector<size_t>& cols, const std::vector<double>& vals)
-        : _addr(addr), _cols(cols), _vals(vals){}
-
-    size_t n_rows() const override;
-    double value(size_t i, size_t j) const override;
-    bool is_in_stencil(size_t i, size_t j) const override;
+    CsrMatrix(const std::vector<int>& addr, const std::vector<int>& cols, const std::vector<double>& vals)
+        : _addr(addr), _cols(cols), _vals(vals) {}
+    CsrMatrix(std::vector<int>&& addr, std::vector<int>&& cols, std::vector<double>&& vals)
+        : _addr(std::move(addr)), _cols(std::move(cols)), _vals(std::move(vals)) {}
+    int n_rows() const override;
+    double value(int i, int j) const override;
+    bool is_in_stencil(int i, int j) const override;
 
 private:
-    std::vector<size_t> _addr;
-    std::vector<size_t> _cols;
+    std::vector<int> _addr;
+    std::vector<int> _cols;
     std::vector<double> _vals;
-    size_t find_index(size_t i, size_t j) const;
+    int find_index(int i, int j) const;
 };
 
 class LodMatrix : public ISparseMatrix
 {
 public:
-    LodMatrix(size_t nrows) : _data(nrows){}
+    LodMatrix(int nrows) : _data(nrows)
+    {
+    }
 
-    void set_value(size_t i, size_t j, double val);
-    void clear_row(size_t i);
+    void set_value(int i, int j, double val);
+    void clear_row(int i);
     CsrMatrix to_csr() const;
 
-    size_t n_rows() const override;
-    double value(size_t i, size_t j) const override;
-    bool is_in_stencil(size_t i, size_t j) const override;
+    int n_rows() const override;
+    double value(int i, int j) const override;
+    bool is_in_stencil(int i, int j) const override;
 
 private:
-    std::vector<std::map<size_t, double>> _data;
+    std::vector<std::map<int, double>> _data;
 };
 } // namespace bflow
 

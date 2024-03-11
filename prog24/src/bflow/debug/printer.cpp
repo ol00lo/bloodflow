@@ -1,11 +1,13 @@
-#include "debug.hpp"
+#include "bflow/debug/printer.hpp"
 #include <iomanip>
 
-void print_matrix_full(const bflow::ISparseMatrix& mat, std::ostream& s)
+using namespace bflow;
+
+void dbg::print_matrix_full(const ISparseMatrix& mat, std::ostream& s)
 {
-    for (size_t i = 0; i < mat.n_rows(); i++)
+    for (int i = 0; i < mat.n_rows(); i++)
     {
-        for (size_t j = 0; j < mat.n_rows(); j++)
+        for (int j = 0; j < mat.n_rows(); j++)
         {
             if (mat.is_in_stencil(i, j) == false)
             {
@@ -20,10 +22,10 @@ void print_matrix_full(const bflow::ISparseMatrix& mat, std::ostream& s)
     }
 }
 
-void print_matrix_stencil(size_t irow, const bflow::ISparseMatrix& mat, std::ostream& s)
+void dbg::print_matrix_stencil(int irow, const ISparseMatrix& mat, std::ostream& s)
 {
     s << "ROW = " << irow << std::endl;
-    for (size_t j = 0; j < mat.n_rows() - 1; j++)
+    for (int j = 0; j < mat.n_rows() - 1; j++)
     {
         if (mat.is_in_stencil(irow, j) == true)
         {
@@ -32,10 +34,10 @@ void print_matrix_stencil(size_t irow, const bflow::ISparseMatrix& mat, std::ost
     }
 }
 
-void print_matrix_stencil(const bflow::ISparseMatrix& mat, std::ostream& s)
+void dbg::print_matrix_stencil(const ISparseMatrix& mat, std::ostream& s)
 {
     s << "NROWS = " << mat.n_rows() << std::endl;
-    for (size_t i = 0; i < mat.n_rows(); i++)
+    for (int i = 0; i < mat.n_rows(); i++)
     {
         print_matrix_stencil(i, mat, s);
     }

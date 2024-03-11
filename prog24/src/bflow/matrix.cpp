@@ -2,46 +2,45 @@
 #include <iostream>
 
 using namespace bflow;
-constexpr size_t INVALID_INDEX = size_t(-1);
 
-void ISparseMatrix::validate_ij(size_t i, size_t j) const
+void ISparseMatrix::validate_ij(int i, int j) const
 {
-    if (i >= n_rows() || j >= n_rows())
+    if (i >= n_rows() || j >= n_rows() || i < 0 || j < 0)
     {
         throw std::runtime_error("values out of matrix");
     }
 }
 
-size_t CsrMatrix::n_rows() const
+int CsrMatrix::n_rows() const
 {
     return _addr.size() - 1;
 }
 
-double CsrMatrix::value(size_t i, size_t j) const
+double CsrMatrix::value(int i, int j) const
 {
-    size_t a = find_index(i, j);
+    int a = find_index(i, j);
     if (a != INVALID_INDEX)
         return _vals[a];
     else
         return 0.0;
 }
 
-bool CsrMatrix::is_in_stencil(size_t i, size_t j) const
+bool CsrMatrix::is_in_stencil(int i, int j) const
 {
-    size_t a = find_index(i, j);
+    int a = find_index(i, j);
     if (a != INVALID_INDEX)
         return true;
     else
         return false;
 }
 
-size_t CsrMatrix::find_index(size_t i, size_t j) const
+int CsrMatrix::find_index(int i, int j) const
 {
     validate_ij(i, j);
-    size_t addr0 = _addr[i];
-    size_t addr1 = _addr[i + 1];
+    int addr0 = _addr[i];
+    int addr1 = _addr[i + 1];
 
-    for (size_t a = addr0; a < addr1; a++)
+    for (int a = addr0; a < addr1; a++)
     {
         if (_cols[a] == j)
         {
@@ -51,13 +50,13 @@ size_t CsrMatrix::find_index(size_t i, size_t j) const
     return INVALID_INDEX;
 }
 
-void LodMatrix::set_value(size_t i, size_t j, double val)
+void LodMatrix::set_value(int i, int j, double val)
 {
     validate_ij(i, j);
     _data[i][j] = val;
 }
 
-void LodMatrix::clear_row(size_t i)
+void LodMatrix::clear_row(int i)
 {
     validate_ij(i, 0);
     _data[i].clear();
@@ -65,12 +64,12 @@ void LodMatrix::clear_row(size_t i)
 
 CsrMatrix LodMatrix::to_csr() const
 {
-    std::vector<size_t> addr;
-    std::vector<size_t> cols;
+    std::vector<int> addr;
+    std::vector<int> cols;
     std::vector<double> vals;
     addr.push_back(0.0);
     int cout = 0;
-    for (size_t i = 0; i < _data.size(); ++i)
+    for (int i = 0; i < _data.size(); ++i)
     {
         for (auto it = _data[i].cbegin(); it != _data[i].cend(); ++it)
         {
@@ -80,16 +79,16 @@ CsrMatrix LodMatrix::to_csr() const
         }
         addr.push_back(cout);
     }
-    CsrMatrix s = CsrMatrix(addr, cols, vals);
+    CsrMatrix s = CsrMatrix(std::move(addr), std::move(cols), std::move(vals));
     return s;
 }
 
-size_t LodMatrix::n_rows() const
+int LodMatrix::n_rows() const
 {
     return _data.size();
 }
 
-double LodMatrix::value(size_t i, size_t j) const
+double LodMatrix::value(int i, int j) const
 {
     validate_ij(i, j);
     auto fnd = _data[i].find(j);
@@ -101,7 +100,7 @@ double LodMatrix::value(size_t i, size_t j) const
         return 0.0;
 }
 
-bool LodMatrix::is_in_stencil(size_t i, size_t j) const
+bool LodMatrix::is_in_stencil(int i, int j) const
 {
     validate_ij(i, j);
     auto fnd = _data[i].find(j);
