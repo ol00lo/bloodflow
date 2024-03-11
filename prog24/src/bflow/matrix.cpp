@@ -79,7 +79,7 @@ CsrMatrix LodMatrix::to_csr() const
         }
         addr.push_back(cout);
     }
-    CsrMatrix s = CsrMatrix(std::move(addr), std::move(cols), std::move(vals));
+    CsrMatrix s(std::move(addr), std::move(cols), std::move(vals));
     return s;
 }
 

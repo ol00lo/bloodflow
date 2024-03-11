@@ -3,10 +3,10 @@
 
 #include <map>
 #include <vector>
-constexpr int INVALID_INDEX = int(-1);
 
 namespace bflow
 {
+constexpr int INVALID_INDEX = int(-1);
 class ISparseMatrix
 {
 public:
