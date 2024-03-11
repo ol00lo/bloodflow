@@ -234,12 +234,18 @@ void NonstatGridSaver::new_time_step(double t)
 
 void NonstatGridSaver::save_vtk_point_data(const std::vector<double>& data, std::string data_name) const
 {
-    _vtk.save_vtk_point_data(data, data_name, _files.back());
+    if (_files.size() > 0)
+    {
+        _vtk.save_vtk_point_data(data, data_name, _files.back());
+    }
 }
 
 void NonstatGridSaver::save_vtk_cell_data(const std::vector<double>& data, std::string data_name) const
 {
-    _vtk.save_vtk_cell_data(data, data_name, _files.back());
+    if (_files.size() > 0)
+    {
+        _vtk.save_vtk_cell_data(data, data_name, _files.back());
+    }
 }
 
 std::string NonstatGridSaver::print_files() const

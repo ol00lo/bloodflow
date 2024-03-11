@@ -29,8 +29,6 @@ public:
     void new_time_step(double t);
     void save_vtk_point_data(const std::vector<double>& data, std::string data_name) const;
     void save_vtk_cell_data(const std::vector<double>& data, std::string data_name) const;
-    void add_in_series() const;
-    std::string print_files() const;
 private:
     GridSaver _vtk;
     std::vector<double> _times;
@@ -38,6 +36,8 @@ private:
     std::string _series_name;
     std::vector<std::string> _files;
     int _files_count = 0;
+    void add_in_series() const;
+    std::string print_files() const;
 };
 
 
