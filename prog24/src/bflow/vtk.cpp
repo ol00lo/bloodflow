@@ -2,6 +2,7 @@
 #include <algorithm>
 #include <cmath>
 #include <fstream>
+#include <iomanip>
 #include <sstream>
 #include <string>
 #define PI 3.1415926
@@ -184,7 +185,8 @@ void GridSaver::save_area(std::string filename) const
         fs << 3 << std::endl;
 }
 
-void GridSaver::save_vtk_point_data(const std::vector<double>& vertex_data, std::string dataname, std::string filename)
+void GridSaver::save_vtk_point_data(const std::vector<double>& vertex_data, std::string dataname,
+                                    std::string filename) const
 {
     if (vertex_data.size() != _points.size())
         throw std::runtime_error("incorrect number of vertex data");
@@ -196,7 +198,8 @@ void GridSaver::save_vtk_point_data(const std::vector<double>& vertex_data, std:
         write_not_new_data(filename, str_to_data, dataname, _points.size(), vertex_data);
 }
 
-void GridSaver::save_vtk_cell_data(const std::vector<double>& cell_data, std::string dataname, std::string filename)
+void GridSaver::save_vtk_cell_data(const std::vector<double>& cell_data, std::string dataname,
+                                   std::string filename) const
 {
     if (cell_data.size() != _cells.size())
         throw std::runtime_error("incorrect number of cell data");
@@ -207,4 +210,66 @@ void GridSaver::save_vtk_cell_data(const std::vector<double>& cell_data, std::st
         write_new_data(filename, "CELL_DATA", dataname, _cells.size(), cell_data);
     else
         write_not_new_data(filename, str_to_data, dataname, _cells.size(), cell_data);
+}
+
+NonstatGridSaver::NonstatGridSaver(const GraphGrid& grid, const std::vector<Point2>& nodes_coo, std::string filename)
+    : _vtk(GridSaver(grid, nodes_coo)), _file_name(filename), _series_name(_file_name + ".vtk.series")
+{
+    add_in_series();
+}
+
+void NonstatGridSaver::new_time_step(double t)
+{
+    std::ostringstream oss;
+    std::ostringstream fn;
+    _times.push_back(t);
+
+    fn << std::setfill('0') << std::setw(4) << _files_count << ".vtk";
+    _files_count++;
+    _vtk.save_area(fn.str());
+
+    _files.push_back(fn.str());
+    add_in_series();
+}
+
+void NonstatGridSaver::save_vtk_point_data(const std::vector<double>& data, std::string data_name) const
+{
+    if (_files.size() > 0)
+    {
+        _vtk.save_vtk_point_data(data, data_name, _files.back());
+    }
+}
+
+void NonstatGridSaver::save_vtk_cell_data(const std::vector<double>& data, std::string data_name) const
+{
+    if (_files.size() > 0)
+    {
+        _vtk.save_vtk_cell_data(data, data_name, _files.back());
+    }
+}
+
+std::string NonstatGridSaver::print_files() const
+{
+    std::string ofs;
+    if (_files.size() > 0)
+    {
+        for (int i = 0; i < _files.size() - 1; i++)
+            ofs += "    {\"name\": \"" + _files[i] + "\", \"time\": " + std::to_string(_times[i]) + "}" + ",\n";
+        ofs += "    {\"name\": \"" + _files.back() + "\", \"time\": " + std::to_string(_times.back()) + "}\n";
+    }
+    return ofs;
+}
+
+void NonstatGridSaver::add_in_series() const
+{
+    std::ofstream ofs(_series_name);
+    if (!ofs)
+        throw std::runtime_error("Failed to open " + _file_name + " for writing");
+
+    ofs << "{" << std::endl;
+    ofs << "  \"file-series-version\" : \"1.0\"," << std::endl;
+    ofs << "  \"files\" : [" << std::endl;
+    ofs << print_files();
+    ofs << "  ]" << std::endl;
+    ofs << "}" << std::endl;
 }
