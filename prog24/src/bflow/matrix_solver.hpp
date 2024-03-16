@@ -1,9 +1,9 @@
 #ifndef MATRIX_SOLVER_HPP
 #define MATRIX_SOLVER_HPP
-#include <map>
-#include <string>
-#include <memory>
 #include "matrix.hpp"
+#include <map>
+#include <memory>
+#include <string>
 
 namespace bflow
 {
@@ -44,7 +44,7 @@ public:
      *
      * Matrix will be copied to the internal structure and can be destroyed
      */
-    void set_matrix(const CsrStencil& mat_stencil, const std::vector<double>& mat_values);
+    void set_matrix(const CsrMatrix& mat_stencil, const std::vector<double>& mat_values);
 
     /**
      * @brief Solves slae Ax = rhs
@@ -69,6 +69,6 @@ private:
     std::unique_ptr<Impl> _pimpl;
 };
 
-} // namespace cfd
+} // namespace bflow
 
 #endif

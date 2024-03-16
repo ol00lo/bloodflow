@@ -25,6 +25,26 @@ double CsrMatrix::value(int i, int j) const
         return 0.0;
 }
 
+const std::vector<int>& CsrMatrix::addr() const
+{
+    return _addr;
+}
+
+const std::vector<int>& CsrMatrix::cols() const
+{
+    return _cols;
+}
+
+int CsrMatrix::n_nonzeros() const
+{
+    return _cols.size();
+}
+
+const std::vector<double>& CsrMatrix::vals() const
+{
+    return _vals;
+}
+
 bool CsrMatrix::is_in_stencil(int i, int j) const
 {
     int a = find_index(i, j);

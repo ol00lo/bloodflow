@@ -12,6 +12,7 @@ set (SRC
 	tests/matrix_test.cpp
 	bflow/debug/printer.cpp
 	bflow/matrix_solver.cpp
+	tests/matrix_solver_test.cpp
 )
 set(HEADERS
 	bflow/vessel_graph.hpp

@@ -1,11 +1,11 @@
 #include "matrix_solver.hpp"
 #include <sstream>
-#include <amg.hpp>
-#include <backend/builtin.hpp>
-#include <make_solver.hpp>
-#include <coarsening/runtime.hpp>
-#include <relaxation/runtime.hpp>
-#include <solver/runtime.hpp>
+#include <amgcl/amg.hpp>
+#include <amgcl/backend/builtin.hpp>
+#include <amgcl/coarsening/runtime.hpp>
+#include <amgcl/make_solver.hpp>
+#include <amgcl/relaxation/runtime.hpp>
+#include <amgcl/solver/runtime.hpp>
 
 using namespace bflow;
 
@@ -13,7 +13,7 @@ class AmgcMatrixSolver::Impl
 {
 public:
     using param_t = boost::property_tree::ptree;
-    using matrix_t = amgcl::backend::crs<double, size_t>;
+    using matrix_t = amgcl::backend::crs<double, int>;
     using backend_t = amgcl::backend::builtin<double>;
     using solver_t = amgcl::make_solver<
         amgcl::amg<backend_t, amgcl::runtime::coarsening::wrapper, amgcl::runtime::relaxation::wrapper>,
@@ -68,14 +68,14 @@ void AmgcMatrixSolver::set_matrix(const CsrMatrix& mat)
     set_matrix(mat, mat.vals());
 }
 
-void AmgcMatrixSolver::set_matrix(const CsrStencil& stencil, const std::vector<double>& mat_values)
+void AmgcMatrixSolver::set_matrix(const CsrMatrix& stencil, const std::vector<double>& mat_values)
 {
     Impl::matrix_t amgcl_matrix;
     amgcl_matrix.own_data = false;
     amgcl_matrix.nrows = amgcl_matrix.ncols = stencil.n_rows();
     amgcl_matrix.nnz = stencil.n_nonzeros();
-    amgcl_matrix.ptr = const_cast<size_t*>(stencil.addr().data());
-    amgcl_matrix.col = const_cast<size_t*>(stencil.cols().data());
+    amgcl_matrix.ptr = const_cast<int*>(stencil.addr().data());
+    amgcl_matrix.col = const_cast<int*>(stencil.cols().data());
     amgcl_matrix.val = const_cast<double*>(mat_values.data());
 
     Impl::param_t prm;
