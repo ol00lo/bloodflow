@@ -3,6 +3,7 @@
 
 #include <map>
 #include <vector>
+#include <set>
 
 namespace bflow
 {
@@ -30,6 +31,10 @@ public:
     int n_rows() const override;
     double value(int i, int j) const override;
     bool is_in_stencil(int i, int j) const override;
+    const std::vector<double>& vals() const;
+    int n_nonzeros() const;
+    const std::vector<int>& addr() const;
+    const std::vector<int>& cols() const;
 
 private:
     std::vector<int> _addr;
