@@ -1,0 +1,6 @@
+~*
+build/
+.syntastic_cpp_config_file
+a.gdb
+*.swp
+*.swo
