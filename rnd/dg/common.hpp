@@ -8,6 +8,7 @@
 #include <set>
 #include <sstream>
 #include <string>
+#include "catch2/catch.hpp"
 
 #define _THROW_NOT_IMP_ \
 {\
@@ -20,5 +21,9 @@
 }
 
 constexpr size_t INVALID_INDEX = (size_t)-1;
+#if !defined(__PRETTY_FUNCTION__) && !defined(__GNUC__)
+#define __PRETTY_FUNCTION__ __FUNCSIG__
+#endif
+
 
 #endif

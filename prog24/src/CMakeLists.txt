@@ -13,6 +13,8 @@ set (SRC
 	bflow/debug/printer.cpp
 	bflow/matrix_solver.cpp
 	tests/matrix_solver_test.cpp
+	tests/dg_test.cpp
+	bflow/time_series_writer.cpp
 )
 set(HEADERS
 	bflow/vessel_graph.hpp
@@ -22,5 +24,7 @@ set(HEADERS
 	bflow/matrix.hpp
 	bflow/debug/printer.hpp
 	bflow/matrix_solver.hpp
+	bflow/time_series_writer.hpp
+	bflow/macros.hpp
 )
 add_executable(bflow_test ${SRC} ${HEADERS})
