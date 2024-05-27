@@ -11,10 +11,10 @@ using namespace bflow;
 
 TEST_CASE("simple test vtk0", "[gridsaver-0]")
 {
-    std::vector<std::vector<int>> node = {{0}, {0}};
-    std::vector<double> ed = {1.0};
+    std::vector<std::vector<int>> node = {{0}, {0, 1}, {1, 2}, {2}};
+    std::vector<double> ed = {1.0, 1.0, 1.0};
     VesselGraph gr1(node, ed);
-    GraphGrid grid1(gr1, 0.25);
+    GraphGrid grid1(gr1, 0.5);
     std::vector<Point2> nodes_coo = generate_nodes_coo(gr1);
     GridSaver vtk1(grid1, nodes_coo);
     vtk1.save_area("first_try.vtk");
@@ -41,7 +41,7 @@ TEST_CASE("simple test vtk2", "[gridsaver-2]")
     std::vector<std::vector<int>> node = {{0, 1, 2}, {0}, {1}, {2, 3}, {3}};
     std::vector<double> ed = {1.4142135624, 1.0, 1.4142135624, 1.0};
     VesselGraph gr1(node, ed);
-    GraphGrid grid1(gr1, 1.0);
+    GraphGrid grid1(gr1, 0.5);
     std::vector<Point2> nodes_coo = generate_nodes_coo(gr1);
     GridSaver vtk1(grid1, nodes_coo);
     vtk1.save_area("first_try.vtk");
@@ -65,6 +65,20 @@ TEST_CASE("simple test vtk3", "[gridsaver-3]")
     std::vector<double> ed = {1.4142135624, 3.0, 2 * 1.4142135624, 2.0};
     VesselGraph gr1(node, ed);
     GraphGrid grid1(gr1, 1.0);
+    std::vector<Point2> nodes_coo = generate_nodes_coo(gr1);
+    GridSaver vtk1(grid1, nodes_coo);
+    vtk1.save_area("first_try.vtk");
+
+    int i = string_count("first_try.vtk");
+    CHECK(i == 35);
+}
+
+TEST_CASE("simple test vtk5", "[gridsaver-5]")
+{
+    std::vector<std::vector<int>> node = {{0, 1}, {0, 2}, {1, 3, 4}, {2}, {3}, {4}};
+    std::vector<double> ed = {1.0,1.0,1.0,1.0,1.0};
+    VesselGraph gr1(node, ed);
+    GraphGrid grid1(gr1, 0.33);
     std::vector<Point2> nodes_coo = generate_nodes_coo(gr1);
     GridSaver vtk1(grid1, nodes_coo);
     vtk1.save_area("first_try.vtk");

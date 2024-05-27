@@ -3,16 +3,16 @@
 
 using namespace bflow;
 
-GraphGrid::GraphGrid(const VesselGraph& graph, double h)
+GraphGrid::GraphGrid(const VesselGraph& graph, double h, int nadd) : _nadd(nadd)
 {
     _points.resize(graph.n_edges());
+    _nodes_by_edge.resize(graph.n_edges());
     int n_nodes = graph.n_nodes();
-
+    int node = 0;
     for (int edge = 0; edge < graph.n_edges(); ++edge)
     {
-
         std::array<int, 2> boundary = graph.tab_edge_node(edge);
-        _edge_nodes.push_back(boundary);
+        _edge_points.push_back(boundary);
         double len = graph.find_length(edge);
         int m_cells = std::round(len / h);
         if (len < 0.5 * h)
@@ -21,15 +21,39 @@ GraphGrid::GraphGrid(const VesselGraph& graph, double h)
         }
         double h_cell = 1.0 * len / m_cells;
 
+        _nodes_by_edge[edge].push_back(node);
+        node++;
         _points[edge].push_back(boundary[0]);
         for (size_t cells = 1; cells < m_cells; ++cells)
         {
             _points[edge].push_back(n_nodes);
-            _cells.push_back(h_cell * cells);
+            _nodes_by_edge[edge].push_back(node);
+            node++;
+            _nodes_by_edge[edge].push_back(node);
+            node++;
+            _cellslen.push_back(h_cell * cells);
             n_nodes++;
         }
         _points[edge].push_back(boundary[1]);
-        _cells.push_back(len);
+        _nodes_by_edge[edge].push_back(node);
+        node++;
+        _cellslen.push_back(len);
+    }
+    _n_nodes = node;
+
+    if (nadd > 1)
+    {
+        for (int i = 1; i < nadd; i++)
+        {
+            
+        }     
+    }
+
+
+    for (int iedg = 0; iedg < _nodes_by_edge.size(); iedg++)
+    {
+        for (int inod = 0; inod < _nodes_by_edge[iedg].size(); inod += 2)
+            _cells.push_back({_nodes_by_edge[iedg][inod], _nodes_by_edge[iedg][inod+1]});
     }
 
     std::set<int> m_points;
@@ -39,6 +63,8 @@ GraphGrid::GraphGrid(const VesselGraph& graph, double h)
             m_points.insert(_points[i][j]);
         }
     _n_points = m_points.size();
+
+
 
     for (size_t i = 0; i < _points.size(); ++i)
         for (size_t j = 1; j < _points[i].size(); ++j)
@@ -56,11 +82,14 @@ GraphGrid::GraphGrid(const VesselGraph& graph, double h)
         _point_cells[_cell_points[cell][1]].push_back(cell);
     }
 
-    for (size_t i = 0; i < _points.size(); ++i)
+   /* for (size_t i = 0; i < _points.size(); ++i)
         for (size_t j = 1; j < _points[i].size(); ++j)
         {
             _cell_edges.push_back(i);
-        }
+        }*/
+
+
+
 }
 
 int GraphGrid::n_points() const
@@ -70,7 +99,7 @@ int GraphGrid::n_points() const
 
 int GraphGrid::n_cells() const
 {
-    return _cells.size();
+    return _cellslen.size();
 }
 
 std::array<int, 2> GraphGrid::tab_cell_point(int cell) const
@@ -85,7 +114,8 @@ std::vector<int> GraphGrid::tab_point_cell(int point) const
 
 int GraphGrid::find_edge_by_cell(int cell) const
 {
-    return _cell_edges.at(cell);
+    //return _cell_edges.at(cell);
+    return 0;
 }
 
 std::vector<int> GraphGrid::points_by_edge(int edge) const
@@ -95,15 +125,15 @@ std::vector<int> GraphGrid::points_by_edge(int edge) const
 
 double GraphGrid::find_cell_length(int cell) const
 {
-    return _cells.at(cell);
+    return _cellslen.at(cell);
 }
 
 int GraphGrid::n_edges() const
 {
-    return _edge_nodes.size();
+    return _edge_points.size();
 }
 
 std::array<int, 2> GraphGrid::find_node_by_edge(int edge) const
 {
-    return _edge_nodes.at(edge);
+    return _edge_points.at(edge);
 }

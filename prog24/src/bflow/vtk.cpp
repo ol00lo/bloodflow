@@ -11,6 +11,22 @@ using namespace bflow;
 
 namespace
 {
+std::vector<Point2> find_coo(Point2 x, Point2 y, int col)
+{
+    std::vector<Point2> res;
+    int i = 1;
+    for (int ipoint = 0; ipoint < col-1; ipoint++)
+    {
+        Point2 new_point;
+        double w = (double)i / col;
+        new_point.x = (1 - w) * x.x + w * y.x;
+        new_point.y = x.y + w * y.y;
+        res.push_back(new_point);
+        i++;
+    }
+    return res;
+}
+
 std::vector<std::string> to_strings(std::string file_name)
 {
     std::vector<std::string> res;
@@ -124,13 +140,15 @@ std::vector<Point2> bflow::generate_nodes_coo(const VesselGraph& graph)
 std::vector<Point2> bflow::generate_points_coo(const GraphGrid& grid, const std::vector<Point2>& nodes_coo)
 {
     std::vector<Point2> points_coo;
-    points_coo.resize(grid.n_points());
+    // points_coo.resize(grid.n_points());
+    // points_coo.resize(grid.n_nodes());
+    // int b = grid.n_nodes();
     for (int iedge = 0; iedge < grid.n_edges(); iedge++)
     {
-        std::vector<int> points_by_edge = grid.points_by_edge(iedge);
+        std::vector<int> nodes_by_edge = grid.nodes_by_edge(iedge);
         std::array<int, 2> edge_nodes = grid.find_node_by_edge(iedge);
-        points_coo[points_by_edge[0]] = nodes_coo[edge_nodes[0]];
-        int n_edge_cells = points_by_edge.size() - 1;
+        points_coo.push_back(nodes_coo[edge_nodes[0]]);
+        int n_edge_cells = grid.points_by_edge(iedge).size() - 1;
         int i = 1;
         for (int ipoint = 0; ipoint < n_edge_cells - 1; ipoint++)
         {
@@ -138,10 +156,11 @@ std::vector<Point2> bflow::generate_points_coo(const GraphGrid& grid, const std:
             double w = (double)i / n_edge_cells;
             new_point.x = (1 - w) * nodes_coo[edge_nodes[0]].x + w * nodes_coo[edge_nodes[1]].x;
             new_point.y = (1 - w) * nodes_coo[edge_nodes[0]].y + w * nodes_coo[edge_nodes[1]].y;
-            points_coo[points_by_edge[i]] = new_point;
+            points_coo.push_back(new_point);
+            points_coo.push_back(new_point);
             i++;
         }
-        points_coo[points_by_edge[n_edge_cells]] = nodes_coo[edge_nodes[1]];
+        points_coo.push_back(nodes_coo[edge_nodes[1]]);
     }
     return points_coo;
 }
@@ -149,14 +168,29 @@ std::vector<Point2> bflow::generate_points_coo(const GraphGrid& grid, const std:
 GridSaver::GridSaver(const GraphGrid& grid, const std::vector<Point2>& nodes_coo)
 {
     _points = generate_points_coo(grid, nodes_coo);
-    for (int iedge = 0; iedge < grid.n_edges(); iedge++)
+    if (grid._nadd > 1)
     {
-        std::vector<int> points_by_edge = grid.points_by_edge(iedge);
-        for (int ipoint = 1; ipoint < points_by_edge.size(); ipoint++)
+        for (int i = 0; i < grid.n_cells(); i++)
         {
-            _cells.push_back({points_by_edge[ipoint - 1], points_by_edge[ipoint]});
+            auto x = grid.node_by_cell(i);
+            std::vector<Point2> addpoints = find_coo(_points[x[0]], _points[x[1]], grid._nadd);
+            for (auto x : addpoints)
+                _points.push_back(x);
         }
+
+
     }
+
+ 
+        for (int iedge = 0; iedge < grid.n_edges(); iedge++)
+        {
+            std::vector<int> nodes_by_edge = grid.nodes_by_edge(iedge);
+            for (int ipoint = 1; ipoint < nodes_by_edge.size(); ipoint += 2)
+            {
+                _cells.push_back({nodes_by_edge[ipoint - 1], nodes_by_edge[ipoint]});
+            }
+        }
+   
 }
 
 void GridSaver::save_area(std::string filename) const
