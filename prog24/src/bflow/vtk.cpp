@@ -15,12 +15,12 @@ std::vector<Point2> find_coo(Point2 x, Point2 y, int col)
 {
     std::vector<Point2> res;
     int i = 1;
-    for (int ipoint = 0; ipoint < col-1; ipoint++)
+    for (int ipoint = 0; ipoint < col - 1; ipoint++)
     {
         Point2 new_point;
         double w = (double)i / col;
         new_point.x = (1 - w) * x.x + w * y.x;
-        new_point.y = x.y + w * y.y;
+        new_point.y = (1 - w) * x.y + w * y.y;
         res.push_back(new_point);
         i++;
     }
@@ -139,58 +139,53 @@ std::vector<Point2> bflow::generate_nodes_coo(const VesselGraph& graph)
 
 std::vector<Point2> bflow::generate_points_coo(const GraphGrid& grid, const std::vector<Point2>& nodes_coo)
 {
-    std::vector<Point2> points_coo;
-    // points_coo.resize(grid.n_points());
-    // points_coo.resize(grid.n_nodes());
-    // int b = grid.n_nodes();
+    std::vector<Point2> points_coo(grid.n_nodes());
     for (int iedge = 0; iedge < grid.n_edges(); iedge++)
     {
+        std::vector<Point2> added;
         std::vector<int> nodes_by_edge = grid.nodes_by_edge(iedge);
+        std::vector<int> points_by_edge = grid.points_by_edge(iedge);
         std::array<int, 2> edge_nodes = grid.find_node_by_edge(iedge);
-        points_coo.push_back(nodes_coo[edge_nodes[0]]);
-        int n_edge_cells = grid.points_by_edge(iedge).size() - 1;
+        std::array<int, 2> p_nodes = grid.find_point_by_edge(iedge);
+        points_coo[edge_nodes[0]]=nodes_coo[p_nodes[0]];
+        int n_edge_cells = points_by_edge.size() - 1;
         int i = 1;
-        for (int ipoint = 0; ipoint < n_edge_cells - 1; ipoint++)
+        auto ipoint = nodes_by_edge.begin()+1;
+        while (*ipoint!=edge_nodes.back())
         {
             Point2 new_point;
             double w = (double)i / n_edge_cells;
-            new_point.x = (1 - w) * nodes_coo[edge_nodes[0]].x + w * nodes_coo[edge_nodes[1]].x;
-            new_point.y = (1 - w) * nodes_coo[edge_nodes[0]].y + w * nodes_coo[edge_nodes[1]].y;
-            points_coo.push_back(new_point);
-            points_coo.push_back(new_point);
+            new_point.x = (1 - w) * nodes_coo[p_nodes[0]].x + w * nodes_coo[p_nodes[1]].x;
+            new_point.y = (1 - w) * nodes_coo[p_nodes[0]].y + w * nodes_coo[p_nodes[1]].y;
+            points_coo[*ipoint]=new_point;
+            points_coo[*(ipoint+1)]=new_point;
+            auto x =
+                find_coo(points_coo[*(ipoint - 1)], points_coo[*ipoint], grid._power);
+            for (int j = 0; j < grid._power-1; j++)
+            {
+                added.push_back(x[j]);
+            }
+            ipoint+=2;
             i++;
         }
-        points_coo.push_back(nodes_coo[edge_nodes[1]]);
+        points_coo[edge_nodes[1]] = nodes_coo[p_nodes[1]];
+        auto x = find_coo(points_coo[*(ipoint - 1)], points_coo[*ipoint], grid._power);
+        for (int j = 0; j < grid._power - 1; j++)
+        {
+            added.push_back(x[j]);
+        }
+        for (auto x : added)
+        {
+            ipoint++;
+            points_coo[*ipoint]=x;
+        }
     }
     return points_coo;
 }
 
-GridSaver::GridSaver(const GraphGrid& grid, const std::vector<Point2>& nodes_coo)
+GridSaver::GridSaver(const GraphGrid& grid, const std::vector<Point2>& nodes_coo) : _cells(grid.cells())
 {
     _points = generate_points_coo(grid, nodes_coo);
-    if (grid._nadd > 1)
-    {
-        for (int i = 0; i < grid.n_cells(); i++)
-        {
-            auto x = grid.node_by_cell(i);
-            std::vector<Point2> addpoints = find_coo(_points[x[0]], _points[x[1]], grid._nadd);
-            for (auto x : addpoints)
-                _points.push_back(x);
-        }
-
-
-    }
-
- 
-        for (int iedge = 0; iedge < grid.n_edges(); iedge++)
-        {
-            std::vector<int> nodes_by_edge = grid.nodes_by_edge(iedge);
-            for (int ipoint = 1; ipoint < nodes_by_edge.size(); ipoint += 2)
-            {
-                _cells.push_back({nodes_by_edge[ipoint - 1], nodes_by_edge[ipoint]});
-            }
-        }
-   
 }
 
 void GridSaver::save_area(std::string filename) const

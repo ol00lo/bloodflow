@@ -37,14 +37,22 @@ public:
     }
     double find_cell_length(int cell) const;
     std::array<int, 2> find_node_by_edge(int edge) const;
-    const int _nadd;
+    std::array<int, 2> find_point_by_edge(int edge) const
+    {
+        return _bound_points[edge];
+    }
+    const int _power;
     std::array<int, 2> node_by_cell(int cell) const
     {
         return _cells[cell];
     };
+    std::vector<std::array<int, 2>> cells() const
+    {
+        return _cells;    
+    }
 
 private:
-    std::vector<std::vector<int>> _points;
+    std::vector<std::vector<int>> _points_by_edge;
     std::vector<double> _cellslen;
     std::vector<std::array<int, 2>> _cells;
     std::vector<std::vector<int>> _point_cells;
@@ -52,8 +60,10 @@ private:
     std::vector<int> _cell_edges;
     int _n_points;
     int _n_nodes;
+    std::vector<int> _local_nodes;
     std::vector<std::array<int, 2>> _edge_points;
     std::vector<std::vector<int>> _nodes_by_edge;
+    std::vector<std::array<int, 2>> _bound_points;
 };
 } // namespace bflow
 #endif

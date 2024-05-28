@@ -8,13 +8,14 @@
 #include <vector>
 
 using namespace bflow;
+std::mt19937 gen(0);
 
 TEST_CASE("simple test vtk0", "[gridsaver-0]")
 {
     std::vector<std::vector<int>> node = {{0}, {0, 1}, {1, 2}, {2}};
     std::vector<double> ed = {1.0, 1.0, 1.0};
     VesselGraph gr1(node, ed);
-    GraphGrid grid1(gr1, 0.5);
+    GraphGrid grid1(gr1, 1,1);
     std::vector<Point2> nodes_coo = generate_nodes_coo(gr1);
     GridSaver vtk1(grid1, nodes_coo);
     vtk1.save_area("first_try.vtk");
@@ -78,12 +79,19 @@ TEST_CASE("simple test vtk5", "[gridsaver-5]")
     std::vector<std::vector<int>> node = {{0, 1}, {0, 2}, {1, 3, 4}, {2}, {3}, {4}};
     std::vector<double> ed = {1.0,1.0,1.0,1.0,1.0};
     VesselGraph gr1(node, ed);
-    GraphGrid grid1(gr1, 0.33);
+    GraphGrid grid1(gr1, 0.5,2);
     std::vector<Point2> nodes_coo = generate_nodes_coo(gr1);
-    GridSaver vtk1(grid1, nodes_coo);
-    vtk1.save_area("first_try.vtk");
-
-    int i = string_count("first_try.vtk");
+    std::uniform_real_distribution<> a(0, 1);
+    NonstatGridSaver saver(grid1, nodes_coo, "second_try"); 
+    for (double t = 0; t <= 10; t += 0.2)
+    {
+        std::vector<double> point_data;
+        for (int i = 0; i < grid1.n_nodes(); i++)
+            point_data.push_back(std::sin(std::sqrt(i))*t);
+        saver.new_time_step(t);
+        saver.save_vtk_point_data(point_data, "d1");
+    }
+    int i = string_count("second_try.vtk.series");
     CHECK(i == 35);
 }
 
