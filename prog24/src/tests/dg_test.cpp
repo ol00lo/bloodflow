@@ -4,7 +4,10 @@
 #include "bflow/matrix_solver.hpp"
 #include "bflow/time_series_writer.hpp"
 #include "bflow/vessel_graph.hpp"
+#include "bflow/graph_grid.hpp"
+#include "bflow/vtk.hpp"
 #include "catch.hpp"
+#include "bflow/graph_grid.hpp"
 #include <fstream>
 #include <sstream>
 using namespace bflow;
@@ -26,6 +29,31 @@ public:
         if (power > 1)
         {
             _THROW_NOT_IMP_;
+        }
+    }
+    FemGrid(const GraphGrid& grid) : _power(grid._power)
+    {
+        if (_power != 1)
+        {
+            throw std::runtime_error("Only power=1 is allowed");
+        }
+        if (grid.n_edges() != 1)
+        {
+            throw std::runtime_error("Only single vessel grids are allowed");
+        }
+        _points.resize(grid.n_points(), 0);
+        double x = 0;
+        for (size_t i = 0; i < grid.n_elem(); ++i)
+        {
+            x += grid.find_cell_length(i);
+            _points[i + 1] = x;
+        }
+        _nodes.resize(grid.n_nodes(), 0);
+        for (size_t inode = 0; inode < _nodes.size(); ++inode)
+        {
+            size_t ipoint = (inode + 1) / 2;
+            _nodes[inode] = _points[ipoint];
+            _f_vec.push_back(grid.find_cell_length(0)/2);
         }
     }
 
@@ -115,6 +143,11 @@ public:
         return ret;
     }
 
+    std::vector<double> load_vector() const
+    {
+        return _f_vec;
+    }
+
     void save_vtk(const std::vector<double>& v, const std::string s) const
     {
         std::ofstream fs(s);
@@ -156,6 +189,7 @@ private:
     mutable CsrMatrix _stencil;
     std::vector<double> _points;
     std::vector<double> _nodes;
+    std::vector<double> _f_vec;
 
     CsrMatrix stencil() const
     {
@@ -235,20 +269,22 @@ private:
 
 double exact(double x, double t = 0)
 {
+    constexpr double eps = 1e-6;
     if (t > 0)
         return exact(x - t);
     else
-        return (x > 0 && x < 0.8) ? 1.0 : 0.0;
+        return (x > eps && x < 0.8 - eps) ? 1.0 : 0.0;
 }
 
-double norm2(FemGrid grid, std::vector<double> u,std::vector<double> L, double time)
+double norm2(FemGrid grid, std::vector<double> u, double time)
 {   
+    auto lv = grid.load_vector();
     double I = 0;
     double gamma = 0;
-    for (size_t i = 0; i < grid.n_points() ; ++i)
+    for (size_t i = 0; i < grid.n_nodes() ; ++i)
     {
         double r = u[i] - exact(grid.node(i), time);
-        I += L[i] * (r * r);
+        I +=  lv[i] * (r * r);
         gamma += grid.h();
     }
     return std::sqrt(I / gamma);
@@ -256,7 +292,8 @@ double norm2(FemGrid grid, std::vector<double> u,std::vector<double> L, double t
 
 TEST_CASE("Transport equation, upwind", "[upwind-transport]")
 {
-    FemGrid grid(3.0, 30, 1);
+    // Legacy test. Can be removed
+    FemGrid grid(3.0, 30, 1);  
     double tau = grid.h() / 2;
 
     CsrMatrix mass = grid.mass_matrix();
@@ -293,7 +330,7 @@ TEST_CASE("Transport equation, upwind", "[upwind-transport]")
     double time = 0;
     while (time < 2.0)
     {
-        std::cout << time << "  ";
+        std::cout << time << std::endl;
 
         // assemble rhs
         std::vector<double> rhs = rhs_mat.mult_vec(u);
@@ -301,7 +338,6 @@ TEST_CASE("Transport equation, upwind", "[upwind-transport]")
         rhs[0] = 0.0;
 
         slv.solve(rhs, u);
-        std::cout << norm2(grid, u, L, time) << std::endl;
         time += tau;
 
         std::string out_filename = writer.add(time);
@@ -309,4 +345,65 @@ TEST_CASE("Transport equation, upwind", "[upwind-transport]")
             grid.save_vtk(u, out_filename);
     }
     CHECK(u[50] == Approx(1.071884924).margin(1e-6));
+}
+
+TEST_CASE("Transport equation, upwind2", "[upwind-transport2]")
+{
+    std::vector<std::vector<int>> node = {{0}, {0}};
+    std::vector<double> ed = {3.0};
+    VesselGraph gr1(node, ed);
+    GraphGrid grid1(gr1, 0.1);
+    FemGrid grid(grid1);
+    std::vector<Point2> nodes_coo = generate_nodes_coo(gr1);
+    double tau = grid.h() / 2;
+
+    CsrMatrix mass = grid.mass_matrix();
+    CsrMatrix transport = grid.transport_matrix();
+    CsrMatrix lhs = mass;
+    CsrMatrix rhs_mat = mass;
+    for (size_t i = 0; i < mass.n_nonzeros(); ++i)
+    {
+        lhs.vals()[i] += tau / 2.0 * transport.vals()[i];
+        rhs_mat.vals()[i] -= tau / 2 * transport.vals()[i];
+    }
+    // left boundary condition
+    lhs.set_unit_row(0);
+
+    // matrix solver
+    AmgcMatrixSolver slv;
+    slv.set_matrix(lhs);
+
+    // initial conditions
+    std::vector<double> u(grid.n_nodes());
+    for (size_t i = 0; i < grid.n_nodes(); ++i)
+    {
+        u[i] = exact(grid.node(i));
+    }
+    TimeSeriesWriter writer("upwind-transport1");
+    //writer.set_time_step(0.1);
+    std::string out_filename = writer.add(0);
+    if (!out_filename.empty())
+        grid.save_vtk(u, out_filename);
+
+
+    double time = 0;
+    while (time < 2.0)
+    {
+        // assemble rhs
+        std::vector<double> rhs = rhs_mat.mult_vec(u);
+        // left boundary condition
+        rhs[0] = 0.0;
+
+        slv.solve(rhs, u);
+        time += tau;
+        
+        std::cout << time << "  ";
+        std::cout << norm2(grid, u, time) << std::endl;
+
+        std::string out_filename = writer.add(time);
+        if (!out_filename.empty())
+            grid.save_vtk(u, out_filename);
+    }
+    CHECK(u[50] == Approx(1.071884924).margin(1e-6));
+    CHECK(norm2(grid, u, time) == Approx(0.102352).margin(1e-4));
 }
