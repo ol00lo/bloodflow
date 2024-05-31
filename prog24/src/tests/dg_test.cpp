@@ -9,7 +9,6 @@
 #include "catch.hpp"
 #include "bflow/graph_grid.hpp"
 #include <fstream>
-#include <sstream>
 using namespace bflow;
 
 class FemGrid
@@ -31,13 +30,13 @@ public:
             _THROW_NOT_IMP_;
         }
     }
-    FemGrid(const GraphGrid& grid) : _power(grid._power)
+    FemGrid(const GraphGrid& grid) : _power(grid.n_midnodes)
     {
         if (_power != 1)
         {
             throw std::runtime_error("Only power=1 is allowed");
         }
-        if (grid.n_edges() != 1)
+        if (grid.n_cells() != 1)
         {
             throw std::runtime_error("Only single vessel grids are allowed");
         }
@@ -267,6 +266,8 @@ private:
     }
 };
 
+namespace
+{
 double exact(double x, double t = 0)
 {
     constexpr double eps = 1e-6;
@@ -288,6 +289,7 @@ double norm2(FemGrid grid, std::vector<double> u, double time)
         gamma += grid.h();
     }
     return std::sqrt(I / gamma);
+}
 }
 
 TEST_CASE("Transport equation, upwind", "[upwind-transport]")

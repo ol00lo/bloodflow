@@ -9,6 +9,8 @@
 #include <vector>
 
 using namespace bflow;
+namespace
+{
 std::mt19937 gen(0);
 double ex(double x, double t = 0)
 {
@@ -16,6 +18,7 @@ double ex(double x, double t = 0)
         return ex(x - t);
     else
         return (x > 0 && x < 0.8) ? 1.0 : 0.0;
+}
 }
 
 

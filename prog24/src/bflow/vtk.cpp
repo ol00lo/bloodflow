@@ -140,13 +140,13 @@ std::vector<Point2> bflow::generate_nodes_coo(const VesselGraph& graph)
 std::vector<Point2> bflow::generate_points_coo(const GraphGrid& grid, const std::vector<Point2>& nodes_coo)
 {
     std::vector<Point2> points_coo(grid.n_nodes());
-    for (int iedge = 0; iedge < grid.n_edges(); iedge++)
+    for (int iedge = 0; iedge < grid.n_cells(); iedge++)
     {
         std::vector<Point2> added;
         std::vector<int> nodes_by_edge = grid.nodes_by_edge(iedge);
         std::vector<int> points_by_edge = grid.points_by_edge(iedge);
         std::array<int, 2> edge_nodes = grid.find_node_by_edge(iedge);
-        std::array<int, 2> p_nodes = grid.find_point_by_edge(iedge);
+        std::array<int, 2> p_nodes = grid.find_points_by_edge(iedge);
         points_coo[edge_nodes[0]]=nodes_coo[p_nodes[0]];
         int n_edge_cells = points_by_edge.size() - 1;
         int i = 1;
@@ -160,8 +160,8 @@ std::vector<Point2> bflow::generate_points_coo(const GraphGrid& grid, const std:
             points_coo[*ipoint]=new_point;
             points_coo[*(ipoint+1)]=new_point;
             auto x =
-                find_coo(points_coo[*(ipoint - 1)], points_coo[*ipoint], grid._power);
-            for (int j = 0; j < grid._power-1; j++)
+                find_coo(points_coo[*(ipoint - 1)], points_coo[*ipoint], grid.n_midnodes);
+            for (int j = 0; j < grid.n_midnodes-1; j++)
             {
                 added.push_back(x[j]);
             }
@@ -169,8 +169,8 @@ std::vector<Point2> bflow::generate_points_coo(const GraphGrid& grid, const std:
             i++;
         }
         points_coo[edge_nodes[1]] = nodes_coo[p_nodes[1]];
-        auto x = find_coo(points_coo[*(ipoint - 1)], points_coo[*ipoint], grid._power);
-        for (int j = 0; j < grid._power - 1; j++)
+        auto x = find_coo(points_coo[*(ipoint - 1)], points_coo[*ipoint], grid.n_midnodes);
+        for (int j = 0; j < grid.n_midnodes - 1; j++)
         {
             added.push_back(x[j]);
         }
