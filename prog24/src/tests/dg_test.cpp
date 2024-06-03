@@ -147,42 +147,6 @@ public:
         return _f_vec;
     }
 
-    void save_vtk(const std::vector<double>& v, const std::string s) const
-    {
-        std::ofstream fs(s);
-        fs << "# vtk DataFile Version 3.0" << std::endl;
-        fs << "DG" << std::endl;
-        fs << "ASCII" << std::endl;
-        fs << "DATASET UNSTRUCTURED_GRID" << std::endl;
-        fs << "POINTS " << n_nodes() << " double" << std::endl;
-        for (const double& point : _nodes)
-        {
-            fs << point << " 0 0" << std::endl;
-            fs << std::endl;
-        }
-
-        // Cells
-        fs << "CELLS  " << n_elements() << "   " << 3 * n_elements() << std::endl;
-        for (size_t ielem = 0; ielem < n_elements(); ++ielem)
-        {
-            std::vector<int> lg = tab_elem_global_bases(ielem);
-            fs << 2 << " " << lg[0] << " " << lg[1] << std::endl;
-        }
-        fs << "CELL_TYPES  " << n_elements() << std::endl;
-        for (size_t i = 0; i < n_elements(); ++i)
-            fs << 3 << std::endl;
-
-        // Data
-        fs << "POINT_DATA " << 2 * n_elements() << std::endl;
-        fs << "SCALARS data  double 1" << std::endl;
-        fs << "LOOKUP_TABLE default" << std::endl;
-        for (size_t i = 0; i < 2 * n_elements(); ++i)
-        {
-            fs << v[i] << std::endl;
-        }
-        fs.close();
-    }
-
 private:
     const int _power;
     mutable CsrMatrix _stencil;
@@ -324,7 +288,7 @@ TEST_CASE("Transport equation, upwind", "[upwind-transport]")
     writer.set_time_step(0.1);
     std::string out_filename = writer.add(0);
     if (!out_filename.empty())
-        grid.save_vtk(u, out_filename);
+        //grid.save_vtk(u, out_filename);
 
 
     std::vector<double> L(grid.n_points(),0.5);
@@ -343,8 +307,8 @@ TEST_CASE("Transport equation, upwind", "[upwind-transport]")
         time += tau;
 
         std::string out_filename = writer.add(time);
-        if (!out_filename.empty())
-            grid.save_vtk(u, out_filename);
+        //if (!out_filename.empty())
+            //grid.save_vtk(u, out_filename);
     }
     CHECK(u[50] == Approx(1.071884924).margin(1e-6));
 }
@@ -384,28 +348,24 @@ TEST_CASE("Transport equation, upwind2", "[upwind-transport2]")
     TimeSeriesWriter writer("upwind-transport1");
     //writer.set_time_step(0.1);
     std::string out_filename = writer.add(0);
-    if (!out_filename.empty())
-        grid.save_vtk(u, out_filename);
 
-
-    double time = 0;
-    while (time < 2.0)
+    NonstatGridSaver saver(grid1, nodes_coo, "upwind-transport1");
+    for (double t = 0; t <= 2.0; t += tau)
     {
+
         // assemble rhs
         std::vector<double> rhs = rhs_mat.mult_vec(u);
         // left boundary condition
         rhs[0] = 0.0;
 
         slv.solve(rhs, u);
-        time += tau;
-        
-        std::cout << time << "  ";
-        std::cout << norm2(grid, u, time) << std::endl;
 
-        std::string out_filename = writer.add(time);
-        if (!out_filename.empty())
-            grid.save_vtk(u, out_filename);
+        std::cout << t << "  ";
+        std::cout << norm2(grid, u, t) << std::endl;
+
+        saver.new_time_step(t);
+        saver.save_vtk_point_data(u, "d1");
     }
     CHECK(u[50] == Approx(1.071884924).margin(1e-6));
-    CHECK(norm2(grid, u, time) == Approx(0.102352).margin(1e-4));
+    CHECK(norm2(grid, u, 2.0) == Approx(0.102352).margin(1e-4));
 }
