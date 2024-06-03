@@ -31,7 +31,7 @@ include_directories(${ghc_SOURCE_DIR}/include)
 #set(BOOST_ROOT /home/ek/Build/boost_1_80_0)
 find_package(Boost REQUIRED)
 include_directories(${BOOST_ROOT})
-
+include_directories(${Boost_INCLUDE_DIRS})
 
 # -------- catch 2
 #include_directories("${CMAKE_SOURCE_DIR}/../bloodflow/prog24/extern/catch2")
@@ -56,10 +56,18 @@ set (SRC
 	test_fe_integration.cpp
 	test_transport_equation.cpp
 )
-
+set (HEADERS
+	common.hpp
+	common_test.hpp
+	fem_element.hpp
+	mat.hpp
+	vtk.hpp
+)
 # build all binaries to build/bin
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
 add_executable(dg ${SRC} ${HEADERS})
+target_link_libraries(dg PRIVATE ${CATCH2_FRAMEWORK})
+
