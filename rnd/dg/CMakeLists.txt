@@ -34,7 +34,6 @@ include_directories(${BOOST_ROOT})
 
 
 # -------- catch 2
-#include_directories("${CMAKE_SOURCE_DIR}/../bloodflow/prog24/extern/catch2")
 # Catch framework
 include(FetchContent)
 FetchContent_Declare(
@@ -53,8 +52,11 @@ set (SRC
 	main.cpp
 	mat.cpp
 	vtk.cpp
+	nonlin_solver.cpp
 	test_fe_integration.cpp
 	test_transport_equation.cpp
+	test_single_vessel.cpp
+	test_nonlin_solver.cpp
 )
 
 # build all binaries to build/bin
@@ -63,3 +65,4 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
 add_executable(dg ${SRC} ${HEADERS})
+target_link_libraries(dg PRIVATE ${CATCH2_FRAMEWORK})

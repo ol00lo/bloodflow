@@ -8,6 +8,7 @@
 #include <set>
 #include <sstream>
 #include <string>
+#include "sys/types.h"
 
 #define _THROW_NOT_IMP_ \
 {\
