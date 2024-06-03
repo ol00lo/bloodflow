@@ -253,7 +253,7 @@ void NonstatGridSaver::new_time_step(double t)
     std::ostringstream fn;
     _times.push_back(t);
 
-    fn << std::setfill('0') << std::setw(4) << _files_count << ".vtk";
+    fn << _file_name<<"_"<<std::setfill('0') << std::setw(4) << _files_count << ".vtk";
     _files_count++;
     _vtk.save_area(fn.str());
 

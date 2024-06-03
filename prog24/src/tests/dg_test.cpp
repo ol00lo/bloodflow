@@ -163,60 +163,6 @@ public:
         return _f_vec;
     }
 
-    void save_vtk(const std::vector<double>& v, const std::string s) const
-    {
-        std::ofstream fs(s);
-        fs << "# vtk DataFile Version 3.0" << std::endl;
-        fs << "DG" << std::endl;
-        fs << "ASCII" << std::endl;
-        fs << "DATASET UNSTRUCTURED_GRID" << std::endl;
-        fs << "POINTS " << n_nodes() << " double" << std::endl;
-        for (const double& point : _nodes)
-        {
-            fs << point << " 0 0" << std::endl;
-        }
-
-        // Cells
-        fs << "CELLS  " << n_elements()*_power << "   " << 3 * n_elements()*_power << std::endl;
-        for (size_t ielem = 0; ielem < n_elements(); ++ielem)
-        {
-            std::vector<int> lg = tab_elem_global_bases(ielem);
-            if (lg.size()==2)
-                fs << 2 << " " << lg[0] << " " << lg[1] << std::endl;
-            if (lg.size() == 3)
-            {
-                fs << 2 << " " << lg[0] << " " << lg[2] << std::endl;
-                fs << 2 << " " << lg[2] << " " << lg[1] << std::endl;   
-            }
-            if (lg.size() == 4)
-            {
-                fs << 2 << " " << lg[0] << " " << lg[2] << std::endl;
-                fs << 2 << " " << lg[2] << " " << lg[3] << std::endl;   
-                fs << 2 << " " << lg[3] << " " << lg[1] << std::endl;   
-            }
-            if (lg.size() == 5)
-            {
-                fs << 2 << " " << lg[0] << " " << lg[2] << std::endl;
-                fs << 2 << " " << lg[2] << " " << lg[3] << std::endl;   
-                fs << 2 << " " << lg[3] << " " << lg[4] << std::endl;   
-                fs << 2 << " " << lg[4] << " " << lg[1] << std::endl;   
-            }
-        }
-        fs << "CELL_TYPES  " << n_elements()*_power << std::endl;
-        for (size_t i = 0; i < n_elements()*_power; ++i)
-            fs << 3 << std::endl;
-
-        // Data
-        fs << "POINT_DATA " << v.size() << std::endl;
-        fs << "SCALARS data  double 1" << std::endl;
-        fs << "LOOKUP_TABLE default" << std::endl;
-        for (size_t i = 0; i < v.size(); ++i)
-        {
-            fs << v[i] << std::endl;
-        }
-        fs.close();
-    }
-
 private:
     const int _power;
     mutable CsrMatrix _stencil;
@@ -304,7 +250,8 @@ private:
     {
         if (_power == 1)
         {
-            return {2.0 / 3.0, 1.0 / 3.0, 1.0 / 3.0, 2.0 / 3.0};
+            return {2.0 / 3.0, 1.0 / 3.0,
+                    1.0 / 3.0, 2.0 / 3.0};
         }
         else if (_power == 2)
         {
@@ -341,25 +288,24 @@ private:
         }
         else if (_power == 2)
         {
-            return {-1.0 / 2.0, -1.0 / 6.0,  2.0 / 3.0, 
-                     1.0 / 6.0,  1.0 / 2.0, -2.0 / 3.0, 
-                    -2.0 / 3.0,  2.0 / 3.0,  0.0};
+            return {-1.0 / 2.0, 1.0 / 6.0, -2.0 / 3.0,
+                    -1.0 / 6.0, 1.0 / 2.0, 2.0 / 3.0, 
+                    2.0 / 3.0, -2.0 / 3.0, 0.0};
         }
         else if (_power == 3)
         {
-            return { -1.0 / 2.0,   7.0 / 80.0,  57.0 / 80.0,  -3.0 / 10.0,
-                     -7.0 / 80.0,  1.0 / 2.0,    3.0 / 10.0, -57.0 / 80.0,
-                    -57.0 / 80.0, -3.0 / 10.0,      0.0,     -81.0 / 80.0,
-                      3.0 / 10.0, 57.0 / 80.0, -81.0 / 80.0, 0.0};
+            return {-1.0 / 2.0,   -7.0 / 80.0, -57.0 / 80.0, 3.0 / 10.0,
+                     7.0 / 80.0,   1.0 / 2.0,   -3.0 / 10.0, 57.0 / 80.0,
+                    57.0 / 80.0,   3.0 / 10.0,     0.0,     -81.0 / 80.0,
+                    -3.0 / 10.0, -57.0 / 80.0,  81.0 / 80.0,    0.0};
         }
         else if (_power == 4)
         {
-            return { -1.0/2,   107.0/1890, -736.0/945, -134.0/315,   64.0/315,
-                    107.0/1890,  1.0/2,     -64.0/315,  134.0/315, -736.0/945,
-                   -736.0/945,  64.0/315,      0.0,     352.0/315, -512.0/945,
-                    134.0/315, 134.0/315,  -352.0/315,     0.0,     352.0/315,
-                    -64.0/315, 736.0/945,   512.0/945, -352.0/315,     0.0 };
-        
+            return { -1.0/2,    107.0/1890, -736.0/945, 134.0/315, -64.0/315,
+                   -107.0/1890,   1.0/2,      64.0/315,-134.0/315, 736.0/945,
+                   736.0/945,  -64.0/315,      0.0,   -352.0/315, 512.0/945,
+                   -134.0/315,  134.0/315,   352.0/315,    0.0,   -352.0/315,
+                     64.0/315, -736.0/945,  -512.0/945, 352.0/315,    0.0 };        
         }
         else
         {
@@ -368,6 +314,7 @@ private:
     }
 };
 
+namespace{
 double exact(double x, double t = 0)
 {
     constexpr double eps = 1e-6;
@@ -391,62 +338,6 @@ double norm2(FemGrid grid, std::vector<double> u, double time)
     return std::sqrt(I / gamma);
 }
 
-TEST_CASE("Transport equation, upwind", "[upwind-transport]")
-{
-    // Legacy test. Can be removed
-    FemGrid grid(3.0, 30, 1);  
-    double tau = grid.h() / 2;
-
-    CsrMatrix mass = grid.mass_matrix();
-    CsrMatrix transport = grid.transport_matrix();
-    CsrMatrix lhs = mass;
-    CsrMatrix rhs_mat = mass;
-    for (size_t i = 0; i < mass.n_nonzeros(); ++i)
-    {
-        lhs.vals()[i] += tau / 2.0 * transport.vals()[i];
-        rhs_mat.vals()[i] -= tau / 2 * transport.vals()[i];
-    }
-    // left boundary condition
-    lhs.set_unit_row(0);
-
-    // matrix solver
-    AmgcMatrixSolver slv;
-    slv.set_matrix(lhs);
-
-    // initial conditions
-    std::vector<double> u(grid.n_nodes());
-    for (size_t i = 0; i < grid.n_nodes(); ++i)
-    {
-        u[i] = exact(grid.node(i));
-    }
-    TimeSeriesWriter writer("upwind-transport");
-    writer.set_time_step(0.1);
-    std::string out_filename = writer.add(0);
-    if (!out_filename.empty())
-        grid.save_vtk(u, out_filename);
-
-
-    std::vector<double> L(grid.n_points(),0.5);
-
-    double time = 0;
-    while (time < 2.0)
-    {
-        std::cout << time << std::endl;
-
-        // assemble rhs
-        std::vector<double> rhs = rhs_mat.mult_vec(u);
-        // left boundary condition
-        rhs[0] = 0.0;
-
-        slv.solve(rhs, u);
-        time += tau;
-
-        std::string out_filename = writer.add(time);
-        if (!out_filename.empty())
-            grid.save_vtk(u, out_filename);
-    }
-    CHECK(u[50] == Approx(1.071884924).margin(1e-6));
-}
 
 void print_matrix_full(const CsrMatrix& mat, std::ostream& s = std::cout)
 {
@@ -466,18 +357,14 @@ void print_matrix_full(const CsrMatrix& mat, std::ostream& s = std::cout)
         s << std::endl;
     }
 }
-
-TEST_CASE("Transport equation, upwind2", "[upwind-transport2]")
+}
+TEST_CASE("Transport equation, upwind", "[upwind-transport]")
 {
-    std::vector<std::vector<int>> node = {{0}, {0}};
-    std::vector<double> ed = {2.0};
-    VesselGraph gr1(node, ed);
-    GraphGrid grid1(gr1, 0.1, 4);
-    std::vector<Point2> nodes_coo = generate_nodes_coo(gr1);
-    FemGrid grid(grid1, nodes_coo);
-    double tau = grid.h() / 2;
+    // Legacy test. Can be removed
+    FemGrid grid(3.0, 30, 1);  
+    double tau = grid.h() / 3;
+
     CsrMatrix mass = grid.mass_matrix();
-    print_matrix_full(mass);
     CsrMatrix transport = grid.transport_matrix();
     CsrMatrix lhs = mass;
     CsrMatrix rhs_mat = mass;
@@ -499,31 +386,91 @@ TEST_CASE("Transport equation, upwind2", "[upwind-transport2]")
     {
         u[i] = exact(grid.node(i));
     }
-    TimeSeriesWriter writer("upwind-transport1");
-    //writer.set_time_step(0.1);
+    TimeSeriesWriter writer("upwind-transport-1");
+    writer.set_time_step(0.1);
     std::string out_filename = writer.add(0);
     if (!out_filename.empty())
-        grid.save_vtk(u, out_filename);
+        //grid.save_vtk(u, out_filename);
+
+
+    std::vector<double> L(grid.n_points(),0.5);
 
     double time = 0;
     while (time < 2.0)
     {
+        std::cout << time << std::endl;
+
         // assemble rhs
         std::vector<double> rhs = rhs_mat.mult_vec(u);
-
         // left boundary condition
         rhs[0] = 0.0;
 
         slv.solve(rhs, u);
         time += tau;
-        
-        std::cout << time << "  ";
-        std::cout << norm2(grid, u, time) << std::endl;
 
         std::string out_filename = writer.add(time);
-        if (!out_filename.empty())
-            grid.save_vtk(u, out_filename);
+        //if (!out_filename.empty())
+            //grid.save_vtk(u, out_filename);
+    }
+    CHECK(u[50] == Approx(1.071884924).margin(1e-6));
+}
+
+
+TEST_CASE("Transport equation, upwind2", "[upwind-transport2]")
+{
+    std::vector<std::vector<int>> node = {{0}, {0}};
+    std::vector<double> ed = {4.0};
+    VesselGraph gr1(node, ed);
+    GraphGrid grid1(gr1, 0.1, 1);
+    std::vector<Point2> nodes_coo = generate_nodes_coo(gr1);
+    FemGrid grid(grid1, nodes_coo);
+    double tau = grid.h() / 2;
+    CsrMatrix mass = grid.mass_matrix();
+    CsrMatrix transport = grid.transport_matrix();
+    CsrMatrix lhs = mass;
+    CsrMatrix rhs_mat = mass;
+    for (size_t i = 0; i < mass.n_nonzeros(); ++i)
+    {
+        //ab
+        //lhs.vals()[i] += 3.0*tau / 2.0 * transport.vals()[i];
+        //rhs_mat.vals()[i] += tau / 2 * transport.vals()[i];
+        //kn
+        lhs.vals()[i] += tau / 2.0 * transport.vals()[i];
+        rhs_mat.vals()[i] -= tau / 2 * transport.vals()[i];
+
+    }
+    // left boundary condition
+    lhs.set_unit_row(0);
+
+    // matrix solver
+    AmgcMatrixSolver slv;
+    slv.set_matrix(lhs);
+
+    // initial conditions
+    std::vector<double> u(grid.n_nodes());
+    for (size_t i = 0; i < grid.n_nodes(); ++i)
+    {
+        u[i] = exact(grid.node(i));
+    }
+
+    NonstatGridSaver saver(grid1, nodes_coo, "dg1kn");
+    saver.new_time_step(0);
+    saver.save_vtk_point_data(u, "data");
+    for (double t = tau; t <= 2.0; t += tau)
+    {
+        std::vector<double> rhs = rhs_mat.mult_vec(u);
+
+        // left boundary condition
+        rhs[0] =0.0;
+
+        slv.solve(rhs, u);
+
+        std::cout << t << "  ";
+        std::cout << norm2(grid, u, t) << std::endl;
+
+        saver.new_time_step(t);
+        saver.save_vtk_point_data(u, "data");
     }
     //CHECK(u[50] == Approx(1.071884924).margin(1e-6));
-    CHECK(norm2(grid, u, time) == Approx(0.102352).margin(1e-4));
+    CHECK(norm2(grid, u, 2.0) == Approx(0.102352).margin(1e-4));
 }
