@@ -22,7 +22,7 @@ public:
 	}
 
 	double h() const{
-		return _points.back() / _points.size();
+		return _points.back() / n_elements();
 	}
 
 	size_t n_nodes() const {
@@ -80,7 +80,10 @@ public:
 		return ret;
 	}
 
-	void save_vtk(const std::vector<double>& v, const std::string s) const {
+	void save_vtk(const std::vector<double>& area,
+			const std::vector<double>& velo,
+			const std::vector<double>& pressure,
+			const std::string s) const {
 		std::ofstream fs(s);
 		fs << "# vtk DataFile Version 3.0" << std::endl;
 		fs << "DG" << std::endl;
@@ -104,10 +107,20 @@ public:
 	
 		// Data
 		fs << "POINT_DATA " << 2*n_elements() << std::endl;
-		fs << "SCALARS data  double 1" << std::endl;
+		fs << "SCALARS area  double 1" << std::endl;
 		fs << "LOOKUP_TABLE default" << std::endl;
 		for (size_t i=0; i<2*n_elements(); ++i){
-			fs << v[i] << std::endl;
+			fs << area[i] << std::endl;
+		}
+		fs << "SCALARS velocity  double 1" << std::endl;
+		fs << "LOOKUP_TABLE default" << std::endl;
+		for (size_t i=0; i<2*n_elements(); ++i){
+			fs << velo[i] << std::endl;
+		}
+		fs << "SCALARS pressure  double 1" << std::endl;
+		fs << "LOOKUP_TABLE default" << std::endl;
+		for (size_t i=0; i<2*n_elements(); ++i){
+			fs << pressure[i] << std::endl;
 		}
 		fs.close();
 	}
@@ -190,7 +203,7 @@ struct ProblemData{
 	static constexpr double pi = 3.1415926;
 
 	// geometry parameters
-	double L = 10;
+	double L = 1;
 	double area0 = pi*1e-4;
 
 	// fluid parameters
@@ -198,7 +211,7 @@ struct ProblemData{
 
 	// vessel tissue parameters
 	double h = 1.5*1e-3;
-	double E = 400*1e3;
+	double E = 4*1e5;
 
 	// inflow conditions
 	double q_inflow(double t) const{
@@ -237,9 +250,9 @@ public:
 	virtual void compute(const std::vector<double>& area, const std::vector<double>& velocity, std::vector<ElementBoundaryFluxes>& fluxes) = 0;
 };
 
-class InflowFluxCalculator: public IUpwindFluxCalculator{
+class InflowQFluxCalculator: public IUpwindFluxCalculator{
 public:
-	InflowFluxCalculator(const FemGrid& grid, const ProblemData& data, std::function<double()> get_time, size_t cell):
+	InflowQFluxCalculator(const FemGrid& grid, const ProblemData& data, std::function<double()> get_time, size_t cell):
 		_data(data),
 		_get_time(get_time),
 		_cell_right(cell),
@@ -253,13 +266,15 @@ public:
 		double t = _get_time();
 		double q = _data.q_inflow(t);
 		double w2_upw = _data.w2(area[_node_right], velocity[_node_right]);
+		//double w2_upw = 0;
 
 		double area_upw = _a;
 		double velo_upw = q / area_upw;
 		_sys.set_qw(q, w2_upw);
-		solve_nonlinear_system(_sys, area_upw, velo_upw);
+		solve_nonlinear_system(_sys, area_upw, velo_upw, 1e-12);
 
 		double fa = _data.flux_a(area_upw, velo_upw);
+		//double fa = q;
 		double fu = _data.flux_u(area_upw, velo_upw);
 
 		fluxes[_cell_right].a_x0 = fa;
@@ -285,13 +300,13 @@ private:
 		std::array<double, 2> f(double area, double velo) const override{
 			return {
 				area*velo - _q,
-				velo - _mult*(sqrt(sqrt(area)) - _root4_area0)
+				velo - _mult*(sqrt(sqrt(area)) - _root4_area0) - _w2
 			};
 		};
 		std::array<double, 4> jac(double area, double velo) const override{
 			return {
 				velo, area,
-				-0.25*_mult/area*area*area*sqrt(sqrt(area)), 1
+				-0.25*_mult*pow(area, -0.75), 1
 			};
 		};
 	private:
@@ -396,21 +411,23 @@ public:
 
 }
 
-TEST_CASE("Single vessel, constant properties", "[single-vessel-explicit]"){
+TEST_CASE("Single vessel, constant properties", "[single-vessel-inviscid-explicit]"){
 	ProblemData data;
 	double time = 0;
 
 	FemGrid grid(data.L, 100, 1);
-	double tau = grid.h()/2;
-	std::vector<ElementBoundaryFluxes> fluxes(grid.n_elements());
+	double tau = grid.h()/100;
+	std::vector<ElementBoundaryFluxes> upwind_fluxes(grid.n_elements());
 
 	VtkUtils::TimeSeriesWriter writer("single-vessel");
+	writer.set_time_step(0.005);
 
 	std::vector<double> velocity(grid.n_nodes(), 0.0);
-	std::vector<double> area(grid.n_nodes(), 0.0);
+	std::vector<double> area(grid.n_nodes(), data.area0);
+	std::vector<double> pressure(grid.n_nodes(), 0.0);
 
 	std::vector<std::shared_ptr<IUpwindFluxCalculator>> upwind_flux_calculator(grid.n_points());
-	upwind_flux_calculator[0].reset(new InflowFluxCalculator(grid, data, [&time](){ return time; }, 0));
+	upwind_flux_calculator[0].reset(new InflowQFluxCalculator(grid, data, [&time](){ return time; }, 0));
 	for (size_t i=1; i<grid.n_points()-1; ++i){
 		upwind_flux_calculator[i].reset(new InternalFluxCalculator(grid, data, i-1, i));
 	}
@@ -422,11 +439,11 @@ TEST_CASE("Single vessel, constant properties", "[single-vessel-explicit]"){
 	AmgcMatrixSolver slv;
 	slv.set_matrix(mass);
 	
-	while (time < 2.0){
-		std::cout << time << std::endl;
-
+	while (time < 0.2 - 1e-6){
 		time += tau;
-		
+		std::cout << "TIME=" << time;
+		std::cout << "  Q=" << data.q_inflow(time) << std::endl;
+
 		// nodewise fluxes
 		std::vector<double> flux_a(grid.n_nodes());
 		std::vector<double> flux_u(grid.n_nodes());
@@ -437,7 +454,7 @@ TEST_CASE("Single vessel, constant properties", "[single-vessel-explicit]"){
 
 		// upwind fluxes
 		for (auto c: upwind_flux_calculator){
-			c->compute(area, velocity, fluxes);
+			c->compute(area, velocity, upwind_fluxes);
 		}
 
 		// assemble rhs
@@ -448,24 +465,31 @@ TEST_CASE("Single vessel, constant properties", "[single-vessel-explicit]"){
 		std::vector<double> tran_a = tran.mult_vec(flux_a);
 		std::vector<double> tran_u = tran.mult_vec(flux_u);
 		for (size_t i=0; i<grid.n_nodes(); ++i){
-			rhs_a[i] += tau * tran_a[i];
-			rhs_u[i] += tau * tran_u[i];
+			rhs_a[i] -= tau * tran_a[i];
+			rhs_u[i] -= tau * tran_u[i];
 		}
 		// + coupling
 		for (size_t ielem=0; ielem<grid.n_elements(); ++ielem){
 			size_t node0 = grid.tab_elem_nodes(ielem)[0];
 			size_t node1 = grid.tab_elem_nodes(ielem)[1];
-			rhs_a[node0] -= fluxes[ielem].a_x0;
-			rhs_a[node1] += fluxes[ielem].a_x1;
-			rhs_u[node0] -= fluxes[ielem].u_x0;
-			rhs_u[node1] += fluxes[ielem].u_x1;
+			rhs_a[node0] += tau*upwind_fluxes[ielem].a_x0;
+			rhs_a[node1] -= tau*upwind_fluxes[ielem].a_x1;
+			rhs_u[node0] += tau*upwind_fluxes[ielem].u_x0;
+			rhs_u[node1] -= tau*upwind_fluxes[ielem].u_x1;
 		}
-
 		//solve
 		slv.solve(rhs_a, area);
 		slv.solve(rhs_u, velocity);
 
+		for (size_t i=0; i<grid.n_nodes(); ++i){
+			pressure[i] = data.pressure(area[i]);
+		}
 		std::string out_filename = writer.add(time);
-		if (!out_filename.empty()) grid.save_vtk(area, out_filename);
+		if (!out_filename.empty()) {
+			grid.save_vtk(area, velocity, pressure, out_filename);
+		}
 	}
+
+	double maxp = *std::max_element(pressure.begin(), pressure.end());
+	CHECK(maxp == Approx(24.3958).margin(1e-3));
 }

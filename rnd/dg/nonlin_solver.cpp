@@ -9,6 +9,7 @@ void solve_nonlinear_system(const INonlinearSystem2& sys, double& x1, double& x2
 	for (it=0; it < maxit; ++it){
 		std::array<double, 2> v = sys.f(x1, x2);
 		n2 = v[0]*v[0] + v[1]*v[1];
+		//std::cout << x1 << " " << x2 << " " << std::sqrt(n2) << std::endl;
 		if (n2 < eps*eps){
 			break;
 		}
