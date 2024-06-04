@@ -3,7 +3,7 @@
 
 using namespace bflow;
 
-GraphGrid::GraphGrid(const VesselGraph& graph, double h, int nadd) : _power(nadd)
+GraphGrid::GraphGrid(const VesselGraph& graph, double h, int nadd) : n_midnodes(nadd)
 {
     _points_by_edge.resize(graph.n_edges());
     _nodes_by_edge.resize(graph.n_edges());
@@ -42,7 +42,6 @@ GraphGrid::GraphGrid(const VesselGraph& graph, double h, int nadd) : _power(nadd
         _nodes_by_edge[edge].push_back(node);
         _point_nodes.insert({boundary[1], {node}});
         node++;
-        //_cellslen.push_back(len);
         _cellslen.push_back(h_cell);
 
         _edge_points.push_back({_nodes_by_edge[edge][0], _nodes_by_edge[edge].back()});
@@ -56,9 +55,9 @@ GraphGrid::GraphGrid(const VesselGraph& graph, double h, int nadd) : _power(nadd
         {
             int before = _nodes_by_edge[edge][nod];
             int after = _nodes_by_edge[edge][nod + 1];
-            if (_power > 1)
+            if (n_midnodes > 1)
             {
-                for (int i = 0; i < _power - 1; i++)
+                for (int i = 0; i < n_midnodes - 1; i++)
                 {
                     _nodes_by_edge[edge].push_back(node);
                     after = node;
@@ -71,11 +70,6 @@ GraphGrid::GraphGrid(const VesselGraph& graph, double h, int nadd) : _power(nadd
             _cells.push_back({before, after});
         }
     }
-    //for (int iedg = 0; iedg < _nodes_by_edge.size(); iedg++)
-    //{
-    //    for (int inod = 0; inod < _nodes_by_edge[iedg].size(); inod += 2)
-    //        _cells.push_back({_nodes_by_edge[iedg][inod], _nodes_by_edge[iedg][inod + 1]});
-    //}
 
     _n_nodes = node;
 
@@ -103,11 +97,6 @@ GraphGrid::GraphGrid(const VesselGraph& graph, double h, int nadd) : _power(nadd
         _point_cells[_cell_points[cell][1]].push_back(cell);
     }
 
-    /* for (size_t i = 0; i < _points_by_edge.size(); ++i)
-         for (size_t j = 1; j < _points_by_edge[i].size(); ++j)
-         {
-             _cell_edges.push_back(i);
-         }*/
 }
 
 int GraphGrid::n_points() const
@@ -156,7 +145,7 @@ double GraphGrid::find_cell_length(int cell) const
     return _cellslen.at(cell);
 }
 
-int GraphGrid::n_edges() const
+int GraphGrid::n_cells() const
 {
     return _edge_points.size();
 }
@@ -166,7 +155,7 @@ std::array<int, 2> GraphGrid::find_node_by_edge(int edge) const
     return _edge_points.at(edge);
 }
 
-std::array<int, 2> GraphGrid::find_point_by_edge(int edge) const
+std::array<int, 2> GraphGrid::find_points_by_edge(int edge) const
 {
     return _bound_points[edge];
 }

@@ -9,7 +9,7 @@
 #include "catch.hpp"
 #include "bflow/graph_grid.hpp"
 #include <fstream>
-#include <sstream>
+
 #include <iomanip>
 using namespace bflow;
 
@@ -27,7 +27,6 @@ public:
             _nodes.push_back(_points.back());
         }
         _nodes.pop_back();
-        _h = length / n;
         if (power > 1)
         {
             _THROW_NOT_IMP_;
@@ -57,7 +56,6 @@ public:
         {
             size_t ipoint = (inode + 1) / 2;
             _nodes[inode] = _points[ipoint];
-            //_f_vec.push_back(grid.find_cell_length(0) / 2);
         }
         double l = _h / _power;
         for (size_t i = 0; i < _points.size()-1; i++)
@@ -211,6 +209,7 @@ private:
         else
             return {2 * ipoint - 1, 2 * ipoint};
     }
+
     std::vector<int> tab_elem_global_bases(int ielem) const
     {
         std::vector<int> ret;
@@ -372,7 +371,13 @@ private:
         }
     }
 
-    void fill_f_vec()
+
+
+
+
+
+
+   void fill_f_vec()
     {
         if (_power == 1)
         {
@@ -499,7 +504,7 @@ TEST_CASE("Transport equation, upwind", "[upwind-transport]")
 {
     // Legacy test. Can be removed
     FemGrid grid(3.0, 30, 1);  
-    double tau = grid.h() / 3;
+    double tau = grid.h() / 2;
 
     CsrMatrix mass = grid.mass_matrix();
     CsrMatrix transport = grid.transport_matrix();
@@ -523,11 +528,11 @@ TEST_CASE("Transport equation, upwind", "[upwind-transport]")
     {
         u[i] = exact(grid.node(i));
     }
-    TimeSeriesWriter writer("upwind-transport-1");
+    TimeSeriesWriter writer("upwind-transport");
     writer.set_time_step(0.1);
     std::string out_filename = writer.add(0);
     if (!out_filename.empty())
-        //grid.save_vtk(u, out_filename);
+        grid.save_vtk(u, out_filename);
 
 
     std::vector<double> L(grid.n_points(),0.5);
@@ -546,8 +551,8 @@ TEST_CASE("Transport equation, upwind", "[upwind-transport]")
         time += tau;
 
         std::string out_filename = writer.add(time);
-        //if (!out_filename.empty())
-            //grid.save_vtk(u, out_filename);
+        if (!out_filename.empty())
+            grid.save_vtk(u, out_filename);
     }
     CHECK(u[50] == Approx(1.071884924).margin(1e-6));
 }
@@ -555,12 +560,13 @@ TEST_CASE("Transport equation, upwind", "[upwind-transport]")
 TEST_CASE("Transport equation, upwind2", "[upwind-transport2]")
 {
     std::vector<std::vector<int>> node = {{0}, {0}};
-    std::vector<double> ed = {4.0};
+    std::vector<double> ed = {3.0};
     VesselGraph gr1(node, ed);
-    GraphGrid grid1(gr1, 0.1, 5);
+    GraphGrid grid1(gr1, 0.1);
     std::vector<Point2> nodes_coo = generate_nodes_coo(gr1);
     FemGrid grid(grid1, nodes_coo);
     double tau = grid.h() / 2;
+
     CsrMatrix mass = grid.mass_matrix();
     CsrMatrix transport = grid.transport_matrix();
     CsrMatrix lhs = mass;
@@ -594,12 +600,16 @@ TEST_CASE("Transport equation, upwind2", "[upwind-transport2]")
     saver.save_vtk_point_data(u, "data");
     for (double t = tau; t <= 2.0; t += tau)
     {
+        // assemble rhs
         std::vector<double> rhs = rhs_mat.mult_vec(u);
-
         // left boundary condition
-        rhs[0] =0.0;
+        rhs[0] = 0.0;
 
         slv.solve(rhs, u);
+        time += tau;
+        
+        std::cout << time << "  ";
+        std::cout << norm2(grid, u, time) << std::endl;
 
         //std::cout << t << "  ";
         std::cout << norm2(grid, u, t) << std::endl;
@@ -607,43 +617,6 @@ TEST_CASE("Transport equation, upwind2", "[upwind-transport2]")
         saver.new_time_step(t);
         saver.save_vtk_point_data(u, "data");
     }
-    //CHECK(u[50] == Approx(1.071884924).margin(1e-6));
-    CHECK(norm2(grid, u, 2.0) == Approx(0.102352).margin(1e-4));
-}
-
-TEST_CASE("be be be", "[be]")
-{
-    double c = 1.0;
-    double h = 0.1;  
-    double k = 0.05; 
-    int N = 30;  
-    std::vector<double> u(N+1);
-
-    for (int i =0; i <= N; ++i)
-    {
-        u[i] = exact(i*h);
-    }
-
-    for (int n = 0; n < 40; ++n)
-    { 
-        std::vector<double> u_new(N+1);
-        for (int i = 0; i < N; ++i)
-        {
-            if (i == 0)
-            {
-                u_new[i] -= k * c * (u[1] - u[i]) / h;
-            }
-            else
-            {
-                u_new[i] -= k * c * (1 - i * h / h) * (u[i + 1] - u[i]) / h;
-            }
-        }
-        u.swap(u_new);
-        for (const auto& val : u)
-        {
-            std::cout << val << " ";
-        }
-        std::cout << std::endl;
-    }
-
+    CHECK(u[50] == Approx(1.071884924).margin(1e-6));
+    CHECK(norm2(grid, u, time) == Approx(0.102352).margin(1e-4));
 }

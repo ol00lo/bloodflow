@@ -25,7 +25,7 @@ public:
     int n_points() const;
     int n_nodes() const;
     int n_elem() const;
-    int n_edges() const;
+    int n_cells() const;
     std::vector<int> tab_point_cell(int point) const;
     std::array<int, 2> tab_cell_point(int cell) const;
     int find_edge_by_cell(int cell) const;
@@ -33,8 +33,8 @@ public:
     std::vector<int> nodes_by_edge(int edge) const;
     double find_cell_length(int cell) const;
     std::array<int, 2> find_node_by_edge(int edge) const;
-    std::array<int, 2> find_point_by_edge(int edge) const;
-    const int _power;
+    std::array<int, 2> find_points_by_edge(int edge) const;
+    const int n_midnodes;
     std::array<int, 2> node_by_cell(int cell) const;
     std::vector<std::array<int, 2>> cells() const;
     std::vector<int> tab_point_nodes(int ipoint) const
