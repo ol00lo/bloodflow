@@ -32,13 +32,13 @@ public:
             _THROW_NOT_IMP_;
         }
     }
-    FemGrid(const GraphGrid& grid, std::vector<Point2> nodes_coo) : _power(grid._power)
+    FemGrid(const GraphGrid& grid, std::vector<Point2> nodes_coo) : _power(grid.n_midnodes)
     {
         if (_power > 6)
         {
             throw std::runtime_error("Only power=1,2,3,4,5,6 is allowed");
         }
-        if (grid.n_edges() != 1)
+        if (grid.n_cells() != 1)
         {
             throw std::runtime_error("Only single vessel grids are allowed");
         }
@@ -531,9 +531,6 @@ TEST_CASE("Transport equation, upwind", "[upwind-transport]")
     TimeSeriesWriter writer("upwind-transport");
     writer.set_time_step(0.1);
     std::string out_filename = writer.add(0);
-    if (!out_filename.empty())
-        grid.save_vtk(u, out_filename);
-
 
     std::vector<double> L(grid.n_points(),0.5);
 
@@ -551,8 +548,6 @@ TEST_CASE("Transport equation, upwind", "[upwind-transport]")
         time += tau;
 
         std::string out_filename = writer.add(time);
-        if (!out_filename.empty())
-            grid.save_vtk(u, out_filename);
     }
     CHECK(u[50] == Approx(1.071884924).margin(1e-6));
 }
@@ -598,6 +593,7 @@ TEST_CASE("Transport equation, upwind2", "[upwind-transport2]")
     NonstatGridSaver saver(grid1, nodes_coo, "dg5");
     saver.new_time_step(0);
     saver.save_vtk_point_data(u, "data");
+ 
     for (double t = tau; t <= 2.0; t += tau)
     {
         // assemble rhs
@@ -606,10 +602,6 @@ TEST_CASE("Transport equation, upwind2", "[upwind-transport2]")
         rhs[0] = 0.0;
 
         slv.solve(rhs, u);
-        time += tau;
-        
-        std::cout << time << "  ";
-        std::cout << norm2(grid, u, time) << std::endl;
 
         //std::cout << t << "  ";
         std::cout << norm2(grid, u, t) << std::endl;
@@ -618,5 +610,5 @@ TEST_CASE("Transport equation, upwind2", "[upwind-transport2]")
         saver.save_vtk_point_data(u, "data");
     }
     CHECK(u[50] == Approx(1.071884924).margin(1e-6));
-    CHECK(norm2(grid, u, time) == Approx(0.102352).margin(1e-4));
+    CHECK(norm2(grid, u, 2.0) == Approx(0.102352).margin(1e-4));
 }
