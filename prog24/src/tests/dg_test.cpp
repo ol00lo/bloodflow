@@ -35,9 +35,9 @@ public:
     }
     FemGrid(const GraphGrid& grid, std::vector<Point2> nodes_coo) : _power(grid._power)
     {
-        if (_power > 4)
+        if (_power > 6)
         {
-            throw std::runtime_error("Only power=1,2,3,4 is allowed");
+            throw std::runtime_error("Only power=1,2,3,4,5,6 is allowed");
         }
         if (grid.n_edges() != 1)
         {
@@ -57,7 +57,7 @@ public:
         {
             size_t ipoint = (inode + 1) / 2;
             _nodes[inode] = _points[ipoint];
-            _f_vec.push_back(grid.find_cell_length(0) / 2);
+            //_f_vec.push_back(grid.find_cell_length(0) / 2);
         }
         double l = _h / _power;
         for (size_t i = 0; i < _points.size()-1; i++)
@@ -69,7 +69,7 @@ public:
                 p += l;
             }
         }
-        
+        fill_f_vec();
     }
 
     double h() const
@@ -239,6 +239,25 @@ private:
                 2 * int(n_elements()) + 3 * ielem + 1,
                 2 * int(n_elements()) + 3 * ielem + 2 };
         }
+        else if (_power == 5)
+        {
+            ret = {2 * ielem,
+                   2 * ielem + 1,
+                   2 * int(n_elements()) + 4 * ielem,
+                   2 * int(n_elements()) + 4 * ielem + 1,
+                   2 * int(n_elements()) + 4 * ielem + 2,
+                   2 * int(n_elements()) + 4 * ielem + 3};
+        }
+        else if (_power == 6)
+        {
+            ret = {2 * ielem,
+                   2 * ielem + 1,
+                   2 * int(n_elements()) + 5 * ielem,
+                   2 * int(n_elements()) + 5 * ielem + 1,
+                   2 * int(n_elements()) + 5 * ielem + 2,
+                   2 * int(n_elements()) + 5 * ielem + 3,
+                   2 * int(n_elements()) + 5 * ielem + 4};
+        }
         else
         {
             _THROW_NOT_IMP_;
@@ -274,6 +293,26 @@ private:
                     -58.0/945,  -58.0/945, -128.0/945,   208.0/315, -128.0/945,
                       8.0/405,  296.0/2835, 256.0/2835, -128.0/945,  256.0/405};
         }
+        else if (_power == 5)
+        {
+            return { 1907.0/24948,    493.0/88704,   24775.0/266112,  -9925.0/133056,  -1525.0/133056,  17125.0/399168,
+                      493.0/88704,   1907.0/24948,   -1525.0/133056,  17125.0/399168,  24775.0/266112,  -9925.0/133056,
+                    24775.0/266112, -1525.0/133056, 111625.0/199584, -24625.0/133056, -62875.0/798336,   2125.0/14784,
+                    -9925.0/133056, 17125.0/399168, -24625.0/133056,  62375.0/99792,    2125.0/14784,  -13625.0/66528,
+                    -1525.0/133056, 24775.0/266112, -62875.0/798336,   2125.0/14784,  111625.0/199584, -24625.0/133056,
+                    17125.0/399168, -9925.0/133056,   2125.0/14784,  -13625.0/66528,  -24625.0/133056,  62375.0/99792};
+        }
+        else if (_power == 6)
+        {
+            return 
+            {90269.0/1501500, -10237.0/3003000, 42087.0/500500, -16971.0/200200, 10237.0/150150,   -687.0/20020,   3867.0/500500,
+            -10237.0/3003000,  90269.0/1501500,  3867.0/500500,   -687.0/20020,  10237.0/150150, -16971.0/200200, 42087.0/500500,
+             42087.0/500500,    3867.0/500500,  64692.0/125125,  -4887.0/20020,   5688.0/25025,  -14607.0/100100,  8532.0/125125,
+            -16971.0/200200,    -687.0/20020,   -4887.0/20020,    2619.0/4004,   -3231.0/10010,    9693.0/40040, -14607.0/100100,
+             10237.0/150150,   10237.0/150150,   5688.0/25025,   -3231.0/10010,  10544.0/15015,   -3231.0/10010,   5688.0/25025,
+              -687.0/20020,   -16971.0/200200, -14607.0/100100,   9693.0/40040,  -3231.0/10010,    2619.0/4004,   -4887.0/20020,
+              3867.0/500500,   42087.0/500500,   8532.0/125125, -14607.0/100100,  5688.0/25025,   -4887.0/20020,  64692.0/125125};
+        }
         else
         {
             _THROW_NOT_IMP_;
@@ -307,9 +346,106 @@ private:
                    -134.0/315,  134.0/315,   352.0/315,    0.0,   -352.0/315,
                      64.0/315, -736.0/945,  -512.0/945, 352.0/315,    0.0 };        
         }
+        else if (_power == 5)
+        {
+            return {-1.0/2,       -5951.0/145152, -123425.0/145152,  6325.0/10368,  1675.0/10368,   -575.0/1512,
+                  5951.0/145152,      1.0/2,        -1675.0/10368,    575.0/1512, 123425.0/145152, -6325.0/10368,
+                123425.0/145152,   1675.0/10368,         0.0,       -6875.0/5184, -19375.0/48384,  51875.0/72576,
+                 -6325.0/10368,    -575.0/1512,      6875.0/5184,        0.0,      51875.0/72576, -38125.0/36288,
+                 -1675.0/10368, -123425.0/145152,   19375.0/48384, -51875.0/72576,      0.0,        6875.0/5184,
+                   575.0/1512,     6325.0/10368,   -51875.0/72576,  38125.0/36288, -6875.0/5184,        0.0};
+        }
+        else if (_power == 6)
+        {
+            return {
+               -1.0/2,      587.0/18480, -1776.0/1925, 5151.0/6160, -3967.0/5775,   732.0/1925, -267.0/1925,
+             -587.0/18480,    1.0/2,       267.0/1925, -732.0/1925,  3967.0/5775, -5151.0/6160, 1776.0/1925,
+             1776.0/1925,  -267.0/1925,       0.0,    -3078.0/1925,  2136.0/1925,  -243.0/385,   648.0/1925,
+            -5151.0/6160,   732.0/1925,   3078.0/1925,     0.0,       -87.0/77,    3807.0/6160, -243.0/385, 
+             3967.0/5775, -3967.0/5775,  -2136.0/1925,   87.0/77,        0.0,       -87.0/77,   2136.0/1925,
+             -732.0/1925,  5151.0/6160,    243.0/385, -3807.0/6160,    87.0/77,        0.0,    -3078.0/1925,
+              267.0/1925, -1776.0/1925,   -648.0/1925,  243.0/385,  -2136.0/1925,  3078.0/1925,     0.0 };
+        }
         else
         {
             _THROW_NOT_IMP_;
+        }
+    }
+
+    void fill_f_vec()
+    {
+        if (_power == 1)
+        {
+            for (size_t i = 0; i < _nodes.size(); i++)
+                _f_vec.push_back(_h / 2);
+        }
+        if (_power == 2)
+        {
+            for (size_t i = 0; i < _points.size(); i++)
+            {
+                _f_vec.push_back(_h / 3 / 2);
+                _f_vec.push_back(_h / 3 / 2);
+            }
+            for (int i = 0; i < _points.size(); i++)
+                _f_vec.push_back(4.0 * _h / 3 / 2);
+        }
+        if (_power == 3)
+        {
+            for (size_t i = 0; i < _points.size(); i++)
+            {
+                _f_vec.push_back(_h / 4 / 2);
+                _f_vec.push_back(_h / 4 / 2);
+            }
+            for (int i = 0; i < _points.size(); i++)
+            {
+                _f_vec.push_back(3.0 * _h / 4 / 2);
+                _f_vec.push_back(3.0 * _h / 4 / 2);
+            }
+        }
+        if (_power == 4)
+        {
+            for (size_t i = 0; i < _points.size(); i++)
+            {
+                _f_vec.push_back(7.0 * _h / 45 / 2);
+                _f_vec.push_back(7.0 * _h / 45 / 2);
+            }
+            for (int i = 0; i < _points.size(); i++)
+            {
+                _f_vec.push_back(32.0 * _h / 45 / 2);
+                _f_vec.push_back(4.0 * _h / 15 / 2);
+                _f_vec.push_back(32.0 * _h / 45 / 2);
+            }
+        }
+        if (_power == 5)
+        {
+            for (size_t i = 0; i < _points.size(); i++)
+            {
+                _f_vec.push_back(19.0 * _h / 144 / 2);
+                _f_vec.push_back(19.0 * _h / 144 / 2);
+            }
+            for (int i = 0; i < _points.size(); i++)
+            {
+                _f_vec.push_back(25.0 * _h / 48 / 2);
+                _f_vec.push_back(25.0 * _h / 72 / 2);
+                _f_vec.push_back(25.0 * _h / 48 / 2);
+                _f_vec.push_back(25.0 * _h / 72 / 2);
+            }
+        }
+        if (_power == 6)
+        {
+            for (size_t i = 0; i < _points.size(); i++)
+            {
+                _f_vec.push_back(41.0 * _h / 420 / 2);
+                _f_vec.push_back(41.0 * _h / 420 / 2);
+            }
+            for (int i = 0; i < _points.size(); i++)
+            {
+                _f_vec.push_back(18.0 * _h / 35 / 2);
+                _f_vec.push_back(9.0 * _h / 140 / 2);
+                _f_vec.push_back(68.0 * _h / 105 / 2);
+                _f_vec.push_back(9.0 * _h / 140 / 2);
+                _f_vec.push_back(18.0 * _h / 35 / 2);
+            }
         }
     }
 };
@@ -358,6 +494,7 @@ void print_matrix_full(const CsrMatrix& mat, std::ostream& s = std::cout)
     }
 }
 }
+
 TEST_CASE("Transport equation, upwind", "[upwind-transport]")
 {
     // Legacy test. Can be removed
@@ -415,13 +552,12 @@ TEST_CASE("Transport equation, upwind", "[upwind-transport]")
     CHECK(u[50] == Approx(1.071884924).margin(1e-6));
 }
 
-
 TEST_CASE("Transport equation, upwind2", "[upwind-transport2]")
 {
     std::vector<std::vector<int>> node = {{0}, {0}};
     std::vector<double> ed = {4.0};
     VesselGraph gr1(node, ed);
-    GraphGrid grid1(gr1, 0.1, 1);
+    GraphGrid grid1(gr1, 0.1, 5);
     std::vector<Point2> nodes_coo = generate_nodes_coo(gr1);
     FemGrid grid(grid1, nodes_coo);
     double tau = grid.h() / 2;
@@ -432,11 +568,11 @@ TEST_CASE("Transport equation, upwind2", "[upwind-transport2]")
     for (size_t i = 0; i < mass.n_nonzeros(); ++i)
     {
         //ab
-        //lhs.vals()[i] += 3.0*tau / 2.0 * transport.vals()[i];
-        //rhs_mat.vals()[i] += tau / 2 * transport.vals()[i];
+        lhs.vals()[i] += 3.0*tau / 2.0 * transport.vals()[i];
+        rhs_mat.vals()[i] += tau / 2 * transport.vals()[i];
         //kn
-        lhs.vals()[i] += tau / 2.0 * transport.vals()[i];
-        rhs_mat.vals()[i] -= tau / 2 * transport.vals()[i];
+        //lhs.vals()[i] += tau / 2.0 * transport.vals()[i];
+        //rhs_mat.vals()[i] -= tau / 2 * transport.vals()[i];
 
     }
     // left boundary condition
@@ -453,7 +589,7 @@ TEST_CASE("Transport equation, upwind2", "[upwind-transport2]")
         u[i] = exact(grid.node(i));
     }
 
-    NonstatGridSaver saver(grid1, nodes_coo, "dg1kn");
+    NonstatGridSaver saver(grid1, nodes_coo, "dg5");
     saver.new_time_step(0);
     saver.save_vtk_point_data(u, "data");
     for (double t = tau; t <= 2.0; t += tau)
@@ -465,7 +601,7 @@ TEST_CASE("Transport equation, upwind2", "[upwind-transport2]")
 
         slv.solve(rhs, u);
 
-        std::cout << t << "  ";
+        //std::cout << t << "  ";
         std::cout << norm2(grid, u, t) << std::endl;
 
         saver.new_time_step(t);
@@ -473,4 +609,41 @@ TEST_CASE("Transport equation, upwind2", "[upwind-transport2]")
     }
     //CHECK(u[50] == Approx(1.071884924).margin(1e-6));
     CHECK(norm2(grid, u, 2.0) == Approx(0.102352).margin(1e-4));
+}
+
+TEST_CASE("be be be", "[be]")
+{
+    double c = 1.0;
+    double h = 0.1;  
+    double k = 0.05; 
+    int N = 30;  
+    std::vector<double> u(N+1);
+
+    for (int i =0; i <= N; ++i)
+    {
+        u[i] = exact(i*h);
+    }
+
+    for (int n = 0; n < 40; ++n)
+    { 
+        std::vector<double> u_new(N+1);
+        for (int i = 0; i < N; ++i)
+        {
+            if (i == 0)
+            {
+                u_new[i] -= k * c * (u[1] - u[i]) / h;
+            }
+            else
+            {
+                u_new[i] -= k * c * (1 - i * h / h) * (u[i + 1] - u[i]) / h;
+            }
+        }
+        u.swap(u_new);
+        for (const auto& val : u)
+        {
+            std::cout << val << " ";
+        }
+        std::cout << std::endl;
+    }
+
 }
