@@ -145,7 +145,7 @@ double GraphGrid::find_cell_length(int cell) const
     return _cellslen.at(cell);
 }
 
-int GraphGrid::n_cells() const
+int GraphGrid::n_edges() const
 {
     return _edge_points.size();
 }

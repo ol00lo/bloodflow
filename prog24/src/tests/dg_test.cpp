@@ -38,7 +38,7 @@ public:
         {
             throw std::runtime_error("Only power=1,2,3,4,5,6 is allowed");
         }
-        if (grid.n_cells() != 1)
+        if (grid.n_edges() != 1)
         {
             throw std::runtime_error("Only single vessel grids are allowed");
         }
@@ -371,12 +371,6 @@ private:
         }
     }
 
-
-
-
-
-
-
    void fill_f_vec()
     {
         if (_power == 1)
@@ -463,6 +457,12 @@ double exact(double x, double t = 0)
         return exact(x - t);
     else
         return (x > eps && x < 0.8 - eps) ? 1.0 : 0.0;
+}
+double exact1(double x, double t = 0)
+{
+    constexpr double pi = 3.1415926535;
+    constexpr double eps = 1e-6;
+    return sin(2 * pi*(x - t));
 }
 
 double norm2(FemGrid grid, std::vector<double> u, double time)
@@ -557,7 +557,7 @@ TEST_CASE("Transport equation, upwind2", "[upwind-transport2]")
     std::vector<std::vector<int>> node = {{0}, {0}};
     std::vector<double> ed = {3.0};
     VesselGraph gr1(node, ed);
-    GraphGrid grid1(gr1, 0.1);
+    GraphGrid grid1(gr1, 0.1, 1);
     std::vector<Point2> nodes_coo = generate_nodes_coo(gr1);
     FemGrid grid(grid1, nodes_coo);
     double tau = grid.h() / 2;
@@ -587,10 +587,10 @@ TEST_CASE("Transport equation, upwind2", "[upwind-transport2]")
     std::vector<double> u(grid.n_nodes());
     for (size_t i = 0; i < grid.n_nodes(); ++i)
     {
-        u[i] = exact(grid.node(i));
+        u[i] = exact1(grid.node(i));
     }
 
-    NonstatGridSaver saver(grid1, nodes_coo, "dg5");
+    NonstatGridSaver saver(grid1, nodes_coo, "bebe");
     saver.new_time_step(0);
     saver.save_vtk_point_data(u, "data");
  

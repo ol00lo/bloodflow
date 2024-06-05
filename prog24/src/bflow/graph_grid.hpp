@@ -25,7 +25,7 @@ public:
     int n_points() const;
     int n_nodes() const;
     int n_elem() const;
-    int n_cells() const;
+    int n_edges() const;
     std::vector<int> tab_point_cell(int point) const;
     std::array<int, 2> tab_cell_point(int cell) const;
     int find_edge_by_cell(int cell) const;

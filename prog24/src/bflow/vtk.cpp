@@ -140,7 +140,7 @@ std::vector<Point2> bflow::generate_nodes_coo(const VesselGraph& graph)
 std::vector<Point2> bflow::generate_points_coo(const GraphGrid& grid, const std::vector<Point2>& nodes_coo)
 {
     std::vector<Point2> points_coo(grid.n_nodes());
-    for (int iedge = 0; iedge < grid.n_cells(); iedge++)
+    for (int iedge = 0; iedge < grid.n_edges(); iedge++)
     {
         std::vector<Point2> added;
         std::vector<int> nodes_by_edge = grid.nodes_by_edge(iedge);
