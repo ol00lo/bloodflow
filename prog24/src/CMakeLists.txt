@@ -8,6 +8,8 @@ set (SRC
 	tests/matrix_test.cpp
 	tests/matrix_solver_test.cpp
 	tests/dg_test.cpp
+	tests/vessels_dg_test.cpp
+	tests/nonlinsolver.cpp
 	bflow/vessel_graph.cpp
 	bflow/graph_grid.cpp
 	bflow/vtk.cpp
@@ -18,6 +20,7 @@ set (SRC
 )
 set(HEADERS
 	tests/test_utils.hpp
+	tests/nonlinsolver.hpp
 	bflow/vessel_graph.hpp
 	bflow/graph_grid.hpp
 	bflow/vtk.hpp
