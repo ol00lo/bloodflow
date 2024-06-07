@@ -211,13 +211,14 @@ TEST_CASE("Inviscid Burgers equation, explicit", "[Burgers-inviscid-explicit]"){
 	for (size_t i=0; i<grid.n_nodes(); ++i){
 		u[i] = exact(grid.node(i));
 	}
-	VtkUtils::TimeSeriesWriter writer("upwind-transport");
+	VtkUtils::TimeSeriesWriter writer("burgers-transport");
 	//writer.set_time_step(0.1);
 	std::string out_filename = writer.add(0);
 	if (!out_filename.empty()) grid.save_vtk(u, out_filename);
 
 	double time = 0;
-	while (time < 2.0 + 1e-6){
+	while (time + tau < 2.0 + 1e-6){
+		time += tau;
 		std::cout << time << std::endl;
 		// assemble rhs
 		std::vector<double> flux(grid.n_nodes());
@@ -234,10 +235,228 @@ TEST_CASE("Inviscid Burgers equation, explicit", "[Burgers-inviscid-explicit]"){
 		rhs[0] = 0.0;
 
 		slv.solve(rhs, u);
-		time += tau;
 
 		std::string out_filename = writer.add(time);
 		if (!out_filename.empty()) grid.save_vtk(u, out_filename);
 	}
-	CHECK(u[10] == Approx(0.1513317908).margin(1e-6));
+	CHECK(u.back() == Approx(0.3071273014).margin(1e-6));
+}
+
+TEST_CASE("Inviscid Burgers equation, implicit", "[Burgers-inviscid-implicit][amg]"){
+	FemGrid grid(1.0, 10, 1);
+	double tau = grid.h()/2;
+
+	CsrMatrix mass = grid.mass_matrix();
+	CsrMatrix transport = grid.transport_matrix();
+	std::vector<double> load_vector = mass.mult_vec(std::vector<double>(grid.n_nodes(), 1.0));
+
+	AmgcMatrixSolver slv(10'000, 1e-14);
+
+	std::vector<double> u(grid.n_nodes());
+	for (size_t i=0; i<grid.n_nodes(); ++i){
+		u[i] = exact(grid.node(i));
+	}
+	VtkUtils::TimeSeriesWriter writer("burgers-transport");
+	//writer.set_time_step(0.1);
+	std::string out_filename = writer.add(0);
+	if (!out_filename.empty()) grid.save_vtk(u, out_filename);
+
+	size_t maxit = 1000;
+	double maxeps = 1e-14;
+	double time = 0;
+	while (time + tau < 2.0 + 1e-6){
+		time += tau;
+		std::cout << time << std::endl;
+
+		// assemble rhs
+		std::vector<double> rhs = mass.mult_vec(u);
+		rhs[0] = 0.0;
+
+		for (size_t it=0; it < maxit; ++it){
+			// assemble lhs
+			CsrMatrix lhs = mass;
+			for (size_t i=0; i<lhs.n_rows(); ++i){
+				for (size_t a=lhs.addr()[i]; a < lhs.addr()[i+1]; ++a){
+					size_t col = lhs.cols()[a];
+					lhs.vals()[a] += tau * u[col] / 2 * transport.vals()[a];
+				}
+			}
+			// left boundary condition
+			lhs.set_unit_row(0);
+
+			// compute residual
+			if (it > 0){
+				std::vector<double> r = lhs.mult_vec(u);
+				double err = 0;
+				for (size_t i=0; i<r.size(); ++i){
+					double diff = lhs.mult_vec(i, u) - rhs[i];
+					err += diff*diff*load_vector[i];
+				}
+				err = std::sqrt(err);
+				if (err < maxeps){
+					std::cout << "converged in " << it << " iterations" << std::endl;
+					break;
+				}
+				if (it == maxit -1){
+					std::cout << "Failed to converge with err=" << err << std::endl;
+				}
+			}
+
+			slv.set_matrix(lhs);
+			slv.solve(rhs, u);
+		}
+
+		std::string out_filename = writer.add(time);
+		if (!out_filename.empty()) grid.save_vtk(u, out_filename);
+	}
+	CHECK(u.back() == Approx(0.3184247038).margin(1e-6));
+}
+
+TEST_CASE("Inviscid Burgers equation, implicit, defect correction", "[Burgers-inviscid-implicit][defcor]"){
+	FemGrid grid(1.0, 10, 1);
+	double tau = grid.h()/2;
+
+	CsrMatrix mass = grid.mass_matrix();
+	CsrMatrix transport = grid.transport_matrix();
+	std::vector<double> load_vector = mass.mult_vec(std::vector<double>(grid.n_nodes(), 1.0));
+
+	AmgcMatrixSolver slv(10'000, 1e-14);
+
+	std::vector<double> u(grid.n_nodes());
+	for (size_t i=0; i<grid.n_nodes(); ++i){
+		u[i] = exact(grid.node(i));
+	}
+	VtkUtils::TimeSeriesWriter writer("burgers-transport");
+	//writer.set_time_step(0.1);
+	std::string out_filename = writer.add(0);
+	if (!out_filename.empty()) grid.save_vtk(u, out_filename);
+
+	size_t maxit = 1000;
+	double maxeps = 1e-14;
+	double time = 0;
+	while (time + tau < 2.0 + 1e-6){
+		time += tau;
+		std::cout << time << std::endl;
+
+		// assemble rhs
+		std::vector<double> rhs = mass.mult_vec(u);
+		rhs[0] = 0.0;
+
+		for (size_t it=0; it < maxit; ++it){
+			// assemble lhs
+			CsrMatrix lhs = mass;
+			for (size_t i=0; i<lhs.n_rows(); ++i){
+				for (size_t a=lhs.addr()[i]; a < lhs.addr()[i+1]; ++a){
+					size_t col = lhs.cols()[a];
+					lhs.vals()[a] += tau * u[col] / 2 * transport.vals()[a];
+				}
+			}
+			// left boundary condition
+			lhs.set_unit_row(0);
+
+			// compute residual
+			if (it > 0){
+				std::vector<double> r = lhs.mult_vec(u);
+				double err = 0;
+				for (size_t i=0; i<r.size(); ++i){
+					double diff = lhs.mult_vec(i, u) - rhs[i];
+					err += diff*diff*load_vector[i];
+				}
+				err = std::sqrt(err);
+				if (err < maxeps){
+					std::cout << "converged in " << it << " iterations" << std::endl;
+					break;
+				}
+				if (it == maxit -1){
+					std::cout << "Failed to converge with err=" << err << std::endl;
+				}
+			}
+
+			slv.set_matrix(lhs);
+			slv.solve(rhs, u);
+		}
+
+		std::string out_filename = writer.add(time);
+		if (!out_filename.empty()) grid.save_vtk(u, out_filename);
+	}
+	CHECK(u.back() == Approx(0.3184247038).margin(1e-6));
+}
+
+TEST_CASE("Inviscid Burgers equation, cn", "[Burgers-inviscid-cn][amg]"){
+	FemGrid grid(1.0, 10, 1);
+	double tau = grid.h()/2;
+	double theta = 0.5;
+
+	CsrMatrix mass = grid.mass_matrix();
+	CsrMatrix transport = grid.transport_matrix();
+	std::vector<double> load_vector = mass.mult_vec(std::vector<double>(grid.n_nodes(), 1.0));
+
+	AmgcMatrixSolver slv(10'000, 1e-14);
+
+	std::vector<double> u(grid.n_nodes());
+	for (size_t i=0; i<grid.n_nodes(); ++i){
+		u[i] = exact(grid.node(i));
+	}
+	VtkUtils::TimeSeriesWriter writer("burgers-transport");
+	//writer.set_time_step(0.1);
+	std::string out_filename = writer.add(0);
+	if (!out_filename.empty()) grid.save_vtk(u, out_filename);
+
+	size_t maxit = 1000;
+	double maxeps = 1e-14;
+	double time = 0;
+	while (time + tau < 2.0 + 1e-6){
+		time += tau;
+		std::cout << time << std::endl;
+
+		// assemble rhs
+		std::vector<double> rhs = mass.mult_vec(u);
+		std::vector<double> flux(grid.n_nodes());
+		for (size_t i=0; i<grid.n_nodes(); ++i){
+			flux[i] = u[i]*u[i]/2;
+		}
+		flux = transport.mult_vec(flux);
+		for (size_t i=0; i<grid.n_nodes(); ++i){
+			rhs[i] -= (1-theta)*tau*flux[i];
+		}
+		rhs[0] = 0.0;
+
+		for (size_t it=0; it < maxit; ++it){
+			// assemble lhs
+			CsrMatrix lhs = mass;
+			for (size_t i=0; i<lhs.n_rows(); ++i){
+				for (size_t a=lhs.addr()[i]; a < lhs.addr()[i+1]; ++a){
+					size_t col = lhs.cols()[a];
+					lhs.vals()[a] += theta * tau * u[col] / 2 * transport.vals()[a];
+				}
+			}
+			// left boundary condition
+			lhs.set_unit_row(0);
+
+			// compute residual
+			if (it > 0){
+				std::vector<double> r = lhs.mult_vec(u);
+				double err = 0;
+				for (size_t i=0; i<r.size(); ++i){
+					double diff = lhs.mult_vec(i, u) - rhs[i];
+					err += diff*diff*load_vector[i];
+				}
+				err = std::sqrt(err);
+				if (err < maxeps){
+					std::cout << "converged in " << it << " iterations" << std::endl;
+					break;
+				}
+				if (it == maxit -1){
+					std::cout << "Failed to converge with err=" << err << std::endl;
+				}
+			}
+
+			slv.set_matrix(lhs);
+			slv.solve(rhs, u);
+		}
+
+		std::string out_filename = writer.add(time);
+		if (!out_filename.empty()) grid.save_vtk(u, out_filename);
+	}
+	CHECK(u.back() == Approx(0.3127291527).margin(1e-6));
 }
