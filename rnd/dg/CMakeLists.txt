@@ -57,6 +57,7 @@ set (SRC
 	test_transport_equation.cpp
 	test_single_vessel.cpp
 	test_nonlin_solver.cpp
+	test_burgers_equation.cpp
 )
 
 # build all binaries to build/bin

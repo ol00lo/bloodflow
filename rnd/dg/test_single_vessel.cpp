@@ -619,7 +619,7 @@ TEST_CASE("Single vessel, inviscid, ver2", "[single-vessel-inviscid-explicit2]")
 	double time = 0;
 
 	FemGrid grid(data.L, data.L*100, 1);
-	double tau = grid.h()/100;
+	double tau = grid.h()/50;
 
 	VtkUtils::TimeSeriesWriter writer("single-vessel");
 	writer.set_time_step(0.005);
@@ -628,14 +628,15 @@ TEST_CASE("Single vessel, inviscid, ver2", "[single-vessel-inviscid-explicit2]")
 	std::vector<double> area(grid.n_nodes(), data.area0);
 	std::vector<double> pressure(grid.n_nodes(), 0.0);
 
-	double theta = 0.0;
+	double theta = 1.0;
 	Assembler assem(grid, data);
+	CHECK(assem.vector_norm2(std::vector<double>(grid.n_nodes(), 3)) == Approx(3.0).margin(1e-12));
 
 	// prepare matrix solver
-	AmgcMatrixSolver slv;
+	AmgcMatrixSolver slv(10'000, 1e-15);
 	slv.set_matrix(assem.mass());
 	
-	size_t iter_max = 100;
+	size_t iter_max = 200;
 
 	while (time < 0.2 - 1e-6){
 		assem.actualize_fluxes(time, area, velocity);
@@ -645,7 +646,7 @@ TEST_CASE("Single vessel, inviscid, ver2", "[single-vessel-inviscid-explicit2]")
 
 		time += tau;
 		std::cout << "TIME=" << time;
-		std::cout << "  Q=" << data.q_inflow(time) << " ";
+		std::cout << "  Q=" << data.q_inflow(time) << std::endl;
 		
 		// rhs1_a  = A
 		std::vector<double> rhs1_a = assem.mass().mult_vec(area);
@@ -687,27 +688,37 @@ TEST_CASE("Single vessel, inviscid, ver2", "[single-vessel-inviscid-explicit2]")
 				for (size_t i=0; i<grid.n_nodes(); ++i){
 					ra[i] -= rhs_a[i];
 				}
-				double eps_a = assem.vector_norm2(ra);
+				double eps_a = assem.vector_norm2(ra) / tau;
 
 				//I u - rhs_u == 0 ?
 				std::vector<double> ru = assem.mass().mult_vec(velocity);
 				for (size_t i=0; i<grid.n_nodes(); ++i){
 					ru[i] -= rhs_u[i];
 				}
-				double eps_u = assem.vector_norm2(ru);
+				double eps_u = assem.vector_norm2(ru) / tau;
 
-				if (std::max(eps_u, eps_a) < 1e-6){
+				std::cout << eps_u << " " << eps_a << std::endl;
+				if (std::max(eps_u, eps_a) < 1e-12){
 					std::cout << "converged in " << it << " iterations" << std::endl;
 					break;
+				} else if (it == iter_max - 1){
+					std::cout << "Warning: internal iterations did not converge: " << eps_u << ", " << eps_a << std::endl;
 				}
 			}
 
 			slv.solve(rhs_a, area);
 			slv.solve(rhs_u, velocity);
+			//auto area1 = area;
+			//auto velocity1 = velocity;
+			//slv.solve(rhs_a, area1);
+			//slv.solve(rhs_u, velocity1);
+			//double w = 0.5;
+			//for (size_t i=0; i<grid.n_nodes(); ++i){
+				//area[i] = w * area1[i] + (1 - w)*area[i];
+				//velocity[i] = w * velocity1[i] + (1 - w)*velocity[i];
+			//}
 
-			if (it == iter_max-1){
-				std::cout << "Warning: internal iterations did not converge" << std::endl;
-			} else {
+			if (it != iter_max-1){
 				assem.actualize_fluxes(time, area, velocity);
 				dfadx = assem.dfa_dx();
 				dfudx = assem.dfu_dx();
