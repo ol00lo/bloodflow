@@ -557,7 +557,7 @@ TEST_CASE("Transport equation, upwind2", "[upwind-transport2]")
     std::vector<std::vector<int>> node = {{0}, {0}};
     std::vector<double> ed = {3.0};
     VesselGraph gr1(node, ed);
-    GraphGrid grid1(gr1, 0.1, 1);
+    GraphGrid grid1(gr1, 1.5, 2);
     std::vector<Point2> nodes_coo = generate_nodes_coo(gr1);
     FemGrid grid(grid1, nodes_coo);
     double tau = grid.h() / 2;

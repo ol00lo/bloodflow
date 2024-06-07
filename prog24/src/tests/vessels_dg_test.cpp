@@ -142,17 +142,17 @@ public:
                 }
 
             // upwind coupling
-            if (ielem > 0)
-            {
-                // left
-                size_t iaddr = ret.find_index(lg[0], lg[0] - 1);
-                ret.vals()[iaddr] -= 1;
-            }
-            {
-                // right
-                size_t iaddr = ret.find_index(lg[1], lg[1]);
-                ret.vals()[iaddr] += 1;
-            }
+            //if (ielem > 0)
+            //{
+            //    // left
+            //    size_t iaddr = ret.find_index(lg[0], lg[0] - 1);
+            //    ret.vals()[iaddr] -= 1;
+            //}
+            //{
+            //    // right
+            //    size_t iaddr = ret.find_index(lg[1], lg[1]);
+            //    ret.vals()[iaddr] += 1;
+            //}
         }
 
         return ret;
@@ -795,22 +795,10 @@ private:
         };
         std::array<double, 16> jac(double area1, double velo1, double area2, double velo2) const override
         {
-            return {std::pow(area1, -0.75) * _mult1 / 4,
-                    1.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    0.0,
-                    -std::pow(area2, -0.75) * _mult2 / 4,
-                    1.0,
-                    velo1,
-                    area1,
-                    -velo2,
-                    -area2,
-                    std::pow(area1, -0.5) * _bet1 / 2,
-                    velo1,
-                    -std::pow(area2, -0.5) * _bet2 / 2,
-                    -velo2};
+            return {std::pow(area1, -0.75) * _mult1 / 4, 1.0, 0.0, 0.0, 
+                    0.0, 0.0, -std::pow(area2, -0.75) * _mult2 / 4, 1.0, 
+                    velo1, area1, -velo2, -area2,
+                    std::pow(area1, -0.5) * _bet1 / 2, velo1, -std::pow(area2, -0.5) * _bet2 / 2, -velo2};
             // return{
             //	std::pow(area1,-0.75) * _mult1 / 4, 0.0, velo1, std::pow(area1,-0.5) * _bet1 / 2,
             //	1.0, 0.0, area1, velo1,
@@ -1133,7 +1121,6 @@ private:
 
 TEST_CASE("Single vessel, inviscid", "[single-vessel-inviscid-explicit]")
 {
-
     ProblemData data;
     double time = 0;
     std::vector<std::vector<int>> node = {{0}, {0}};
@@ -1161,7 +1148,10 @@ TEST_CASE("Single vessel, inviscid", "[single-vessel-inviscid-explicit]")
         grid, data, [&time]() { return time; }, 0));
     for (size_t i = 1; i < grid.n_points() - 1; ++i)
     {
-        upwind_flux_calculator[i].reset(new InternalFluxCalculator(grid, data, i - 1, i));
+        if (i==10)
+            upwind_flux_calculator[i].reset(new MergingFluxCalculator(grid, data, data, i - 1, i));
+        else
+            upwind_flux_calculator[i].reset(new InternalFluxCalculator(grid, data, i - 1, i));
     }
     upwind_flux_calculator.back().reset(new OutflowFluxCalculator(grid, data, grid.n_elements() - 1));
     // prepare matrix solver
@@ -1175,7 +1165,7 @@ TEST_CASE("Single vessel, inviscid", "[single-vessel-inviscid-explicit]")
     {
         time += tau;
         std::cout << "TIME=" << time;
-        std::cout << "  Q=" << data.q_inflow(time) << std::endl;
+        //std::cout << "  Q=" << data.q_inflow(time) << std::endl;
 
         // nodewise fluxes
         std::vector<double> flux_a(grid.n_nodes());
