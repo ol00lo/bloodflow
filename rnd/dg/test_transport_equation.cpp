@@ -19,7 +19,7 @@ public:
 	}
 
 	double h() const{
-		return _points.back() / _points.size();
+		return _points.back() / n_elements();
 	}
 
 	size_t n_nodes() const {
@@ -231,5 +231,5 @@ TEST_CASE("Transport equation, upwind", "[upwind-transport][1]"){
 		std::string out_filename = writer.add(time);
 		if (!out_filename.empty()) grid.save_vtk(u, out_filename);
 	}
-	CHECK(u[50] == Approx(1.071884924).margin(1e-6));
+	CHECK(u[50] == Approx(1.1412075081).margin(1e-6));
 }

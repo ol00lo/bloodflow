@@ -22,7 +22,7 @@ public:
 	}
 
 	double h() const{
-		return _points.back() / _points.size();
+		return _points.back() / n_elements();
 	}
 
 	size_t n_nodes() const {
@@ -78,6 +78,47 @@ public:
 				ret.vals()[iaddr] -= v;
 			}
 			
+			// upwind coupling
+			if (ielem > 0){
+				// left
+				size_t iaddr = ret.get_address(lg[0], lg[0] - 1);
+				ret.vals()[iaddr] -= 1;
+			}
+			{
+				// right
+				size_t iaddr = ret.get_address(lg[1], lg[1]);
+				ret.vals()[iaddr] += 1;
+			}
+		}
+
+		return ret;
+	}
+
+	CsrMatrix block_transport_matrix() const{
+		CsrMatrix ret(stencil());
+		std::vector<double> local = local_transport_matrix();
+
+		for (size_t ielem=0; ielem<n_elements(); ++ielem){
+			std::vector<size_t> lg = tab_elem_global_bases(ielem);
+
+			// block diagonal
+			for (size_t irow=0; irow<n_local_bases(); ++irow)
+			for (size_t icol=0; icol<n_local_bases(); ++icol){
+				double v = local[irow * n_local_bases() + icol];
+				size_t iaddr = ret.get_address(lg[irow], lg[icol]);
+				ret.vals()[iaddr] -= v;
+			}
+		}
+
+		return ret;
+	}
+
+	CsrMatrix coupled_transport_matrix() const{
+		CsrMatrix ret(stencil());
+
+		for (size_t ielem=0; ielem<n_elements(); ++ielem){
+			std::vector<size_t> lg = tab_elem_global_bases(ielem);
+
 			// upwind coupling
 			if (ielem > 0){
 				// left
@@ -239,7 +280,7 @@ TEST_CASE("Inviscid Burgers equation, explicit", "[Burgers-inviscid-explicit]"){
 		std::string out_filename = writer.add(time);
 		if (!out_filename.empty()) grid.save_vtk(u, out_filename);
 	}
-	CHECK(u.back() == Approx(0.3071273014).margin(1e-6));
+	CHECK(u.back() == Approx(0.3274573644).margin(1e-6));
 }
 
 TEST_CASE("Inviscid Burgers equation, implicit", "[Burgers-inviscid-implicit][amg]"){
@@ -309,15 +350,16 @@ TEST_CASE("Inviscid Burgers equation, implicit", "[Burgers-inviscid-implicit][am
 		std::string out_filename = writer.add(time);
 		if (!out_filename.empty()) grid.save_vtk(u, out_filename);
 	}
-	CHECK(u.back() == Approx(0.3184247038).margin(1e-6));
+	CHECK(u.back() == Approx(0.3396867099).margin(1e-6));
 }
 
-TEST_CASE("Inviscid Burgers equation, implicit, defect correction", "[Burgers-inviscid-implicit][defcor]"){
+TEST_CASE("Inviscid Burgers equation, implicit, iterflux", "[Burgers-inviscid-implicit-iterflux][amg]"){
 	FemGrid grid(1.0, 10, 1);
-	double tau = grid.h()/2;
+	double tau = grid.h()/5;
 
 	CsrMatrix mass = grid.mass_matrix();
-	CsrMatrix transport = grid.transport_matrix();
+	CsrMatrix block_transport = grid.block_transport_matrix();
+	CsrMatrix coupled_transport = grid.coupled_transport_matrix();
 	std::vector<double> load_vector = mass.mult_vec(std::vector<double>(grid.n_nodes(), 1.0));
 
 	AmgcMatrixSolver slv(10'000, 1e-14);
@@ -331,7 +373,7 @@ TEST_CASE("Inviscid Burgers equation, implicit, defect correction", "[Burgers-in
 	std::string out_filename = writer.add(0);
 	if (!out_filename.empty()) grid.save_vtk(u, out_filename);
 
-	size_t maxit = 1000;
+	size_t maxit = 10000;
 	double maxeps = 1e-14;
 	double time = 0;
 	while (time + tau < 2.0 + 1e-6){
@@ -339,8 +381,7 @@ TEST_CASE("Inviscid Burgers equation, implicit, defect correction", "[Burgers-in
 		std::cout << time << std::endl;
 
 		// assemble rhs
-		std::vector<double> rhs = mass.mult_vec(u);
-		rhs[0] = 0.0;
+		std::vector<double> rhs1 = mass.mult_vec(u);
 
 		for (size_t it=0; it < maxit; ++it){
 			// assemble lhs
@@ -348,11 +389,59 @@ TEST_CASE("Inviscid Burgers equation, implicit, defect correction", "[Burgers-in
 			for (size_t i=0; i<lhs.n_rows(); ++i){
 				for (size_t a=lhs.addr()[i]; a < lhs.addr()[i+1]; ++a){
 					size_t col = lhs.cols()[a];
-					lhs.vals()[a] += tau * u[col] / 2 * transport.vals()[a];
+					lhs.vals()[a] += tau * u[col] / 2 * block_transport.vals()[a];
 				}
 			}
+
+			//assemble rhs
+			std::vector<double> rhs(rhs1);
+			std::vector<double> u2(grid.n_nodes());
+			for (size_t i=0; i<u2.size(); ++i) u2[i] = u[i]*u[i];
+			//// var1: goes to rhs
+			//for (size_t i=0; i<grid.n_nodes(); ++i){
+			//        rhs[i] -= tau * coupled_transport.mult_vec(i, u2) / 2.0;
+			//}
+			// var2: goes to the lhs diagonal
+			for (size_t i=0; i<lhs.n_rows(); ++i){
+				double denum = (u[i] == 0) ? 1e-16 : u[i];
+				double v = tau * coupled_transport.mult_vec(i, u2) / 2.0 / denum;
+				for (size_t a=lhs.addr()[i]; a < lhs.addr()[i+1]; ++a){
+					size_t col = lhs.cols()[a];
+					if (col == i){
+						lhs.vals()[a] += v;
+						break;
+					}
+				}
+			}
+			//// var3: goes to the both sides
+			//for (size_t i=0; i<lhs.n_rows(); ++i){
+			//        double v = coupled_transport.mult_vec(i, u2) / 2.0;
+			//        size_t il, ir;
+			//        if (i == 0 || i == lhs.n_rows() - 1){
+			//                il = ir = i;
+			//        } else if (i%2 == 0){
+			//                il = i - 1;
+			//                ir = i;
+			//        } else {
+			//                il = i;
+			//                ir = i+1;
+			//        }
+			//        for (size_t a=lhs.addr()[i]; a < lhs.addr()[i+1]; ++a){
+			//                size_t col = lhs.cols()[a];
+			//                if (col == ir){
+			//                        double d = (u[col] == 0) ? 1e-16 : u[col];
+			//                        lhs.vals()[a] += tau * v / 2 / d;
+			//                }
+			//                if (col == il){
+			//                        double d = (u[col] == 0) ? 1e-16 : u[col];
+			//                        lhs.vals()[a] += tau * v / 2 / d;
+			//                }
+			//        }
+			//}
+	
 			// left boundary condition
 			lhs.set_unit_row(0);
+			rhs[0] = 0;
 
 			// compute residual
 			if (it > 0){
@@ -379,7 +468,7 @@ TEST_CASE("Inviscid Burgers equation, implicit, defect correction", "[Burgers-in
 		std::string out_filename = writer.add(time);
 		if (!out_filename.empty()) grid.save_vtk(u, out_filename);
 	}
-	CHECK(u.back() == Approx(0.3184247038).margin(1e-6));
+	CHECK(u.back() == Approx(0.3360909317).margin(1e-6));
 }
 
 TEST_CASE("Inviscid Burgers equation, cn", "[Burgers-inviscid-cn][amg]"){
@@ -458,5 +547,5 @@ TEST_CASE("Inviscid Burgers equation, cn", "[Burgers-inviscid-cn][amg]"){
 		std::string out_filename = writer.add(time);
 		if (!out_filename.empty()) grid.save_vtk(u, out_filename);
 	}
-	CHECK(u.back() == Approx(0.3127291527).margin(1e-6));
+	CHECK(u.back() == Approx(0.3335733261).margin(1e-6));
 }

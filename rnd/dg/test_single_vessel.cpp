@@ -526,12 +526,15 @@ public:
 		_flux_u.resize(_grid.n_nodes());
 		_visc.resize(_grid.n_nodes());
 
-		std::vector<double> unit(_grid.n_nodes(), 1.0);
-		_load_vector = _mass.mult_vec(unit);
+		_load_vector = _mass.mult_vec(std::vector<double>(_grid.n_nodes(), 1.0));
 	}
 
 	const CsrMatrix& mass() const{
 		return _mass;
+	}
+
+	const CsrMatrix& transport() const{
+		return _tran;
 	}
 
 	void actualize_fluxes(double time, const std::vector<double>& area, const std::vector<double>& velo){
@@ -619,7 +622,7 @@ TEST_CASE("Single vessel, inviscid, ver2", "[single-vessel-inviscid-explicit2]")
 	double time = 0;
 
 	FemGrid grid(data.L, data.L*100, 1);
-	double tau = grid.h()/50;
+	double tau = grid.h()/100;
 
 	VtkUtils::TimeSeriesWriter writer("single-vessel");
 	writer.set_time_step(0.005);
@@ -628,15 +631,80 @@ TEST_CASE("Single vessel, inviscid, ver2", "[single-vessel-inviscid-explicit2]")
 	std::vector<double> area(grid.n_nodes(), data.area0);
 	std::vector<double> pressure(grid.n_nodes(), 0.0);
 
-	double theta = 1.0;
 	Assembler assem(grid, data);
 	CHECK(assem.vector_norm2(std::vector<double>(grid.n_nodes(), 3)) == Approx(3.0).margin(1e-12));
 
 	// prepare matrix solver
-	AmgcMatrixSolver slv(10'000, 1e-15);
+	AmgcMatrixSolver slv;
 	slv.set_matrix(assem.mass());
 	
-	size_t iter_max = 200;
+	while (time < 0.2 - 1e-6){
+		assem.actualize_fluxes(time, area, velocity);
+		std::vector<double> dfadx = assem.dfa_dx(); 
+		std::vector<double> dfudx = assem.dfu_dx();
+		std::vector<double> visc_term = assem.viscous_term();
+
+		time += tau;
+		std::cout << "TIME=" << time;
+		std::cout << "  Q=" << data.q_inflow(time) << std::endl;
+		
+		// rhs_a  = A
+		std::vector<double> rhs_a = assem.mass().mult_vec(area);
+		//           - tau*(1-theta)*d(uA)/dx
+		for (size_t i=0; i<rhs_a.size(); ++i){
+			rhs_a[i] -= tau*dfadx[i];
+		}
+
+		// rhs1_u = u
+		std::vector<double> rhs_u = assem.mass().mult_vec(velocity);
+		//          -tau*(1-theta)d(Pt)/dx
+		for (size_t i=0; i<rhs_u.size(); ++i){
+			rhs_u[i] -= tau*dfudx[i];
+		}
+		//          +tau*(1-theta)*kr*u/a
+		for (size_t i=0; i<rhs_u.size(); ++i){
+			rhs_u[i] += tau*visc_term[i];
+		}
+
+		slv.solve(rhs_a, area);
+		slv.solve(rhs_u, velocity);
+
+		for (size_t i=0; i<grid.n_nodes(); ++i){
+			pressure[i] = data.pressure(area[i]);
+		}
+		std::string out_filename = writer.add(time);
+		if (!out_filename.empty()) {
+			grid.save_vtk(area, velocity, pressure, out_filename);
+		}
+	}
+
+	double maxp = *std::max_element(pressure.begin(), pressure.end());
+	CHECK(maxp == Approx(24.3632).margin(1e-3));
+}
+
+
+TEST_CASE("Single vessel, inviscid, implicit", "[single-vessel-inviscid-implicit]"){
+	ProblemData data;
+	data.L = 1;
+	data.recompute();
+	double time = 0;
+
+	FemGrid grid(data.L, data.L*100, 1);
+	double tau = grid.h()/100;
+
+	VtkUtils::TimeSeriesWriter writer("single-vessel");
+	writer.set_time_step(0.005);
+
+	std::vector<double> velocity(grid.n_nodes(), 0.0);
+	std::vector<double> area(grid.n_nodes(), data.area0);
+	std::vector<double> pressure(grid.n_nodes(), 0.0);
+
+	Assembler assem(grid, data);
+
+	// prepare matrix solver
+	AmgcMatrixSolver slv;
+	
+	size_t iter_max = 20;
 
 	while (time < 0.2 - 1e-6){
 		assem.actualize_fluxes(time, area, velocity);
@@ -648,39 +716,46 @@ TEST_CASE("Single vessel, inviscid, ver2", "[single-vessel-inviscid-explicit2]")
 		std::cout << "TIME=" << time;
 		std::cout << "  Q=" << data.q_inflow(time) << std::endl;
 		
-		// rhs1_a  = A
-		std::vector<double> rhs1_a = assem.mass().mult_vec(area);
-		//           - tau*(1-theta)*d(uA)/dx
-		for (size_t i=0; i<rhs1_a.size(); ++i){
-			rhs1_a[i] -= tau*(1-theta)*dfadx[i];
-		}
-
-		// rhs1_u = u
+		// rhs_a  = A
+		std::vector<double> rhs_a = assem.mass().mult_vec(area);
+		// rhs_u = u
 		std::vector<double> rhs1_u = assem.mass().mult_vec(velocity);
-		//          -tau*(1-theta)d(Pt)/dx
-		for (size_t i=0; i<rhs1_u.size(); ++i){
-			rhs1_u[i] -= tau*(1-theta)*dfudx[i];
-		}
-		//          +tau*(1-theta)*kr*u/a
-		for (size_t i=0; i<rhs1_u.size(); ++i){
-			rhs1_u[i] += tau*(1-theta)*visc_term[i];
-		}
 
 		for (size_t it=0; it < iter_max; ++it){
-			// rhs_a = rhs1_a -theta * tau * d(ua)/dx
-			std::vector<double> rhs_a(rhs1_a);
+			// 1. A equation
+			assem.actualize_fluxes(time, area, velocity);
+			// 1.1 LHS
+			CsrMatrix lhs_a = assem.mass();
 			for (size_t i=0; i<grid.n_nodes(); ++i){
-				rhs_a[i] -= tau*theta*dfadx[i];
+				for (size_t a = lhs_a.addr()[i]; a < lhs_a.addr()[i+1]; ++a){
+					size_t col = lhs_a.cols()[a];
+					lhs_a.vals()[a] += tau * velocity[col] * assem.transport().vals()[a];
+				}
 			}
-			// rhs_u = rhs1_u - theta * tau * d(Pt)/dx + theta * tau * Kr * u/a
-			std::vector<double> rhs_u(rhs1_u);
+			// 1.2 Solve
+			slv.set_matrix(lhs_a);
+			slv.solve(rhs_a, area);
+
+			// 2. u equation
+			assem.actualize_fluxes(time, area, velocity);
+			// 2.1 LHS + RHS
+			CsrMatrix lhs_u = assem.mass();
+			std::vector<double> prho(grid.n_nodes());
 			for (size_t i=0; i<grid.n_nodes(); ++i){
-				rhs_u[i] -= tau*theta*dfudx[i];
+				prho[i] = data.pressure(area[i]) / data.rho;
 			}
+			std::vector<double> rhs_u = assem.mass().mult_vec(prho);
 			for (size_t i=0; i<grid.n_nodes(); ++i){
-				rhs_u[i] += tau*theta*visc_term[i];
+				rhs_u[i] = -tau*rhs_u[i] + rhs1_u[i];
+				for (size_t a = lhs_u.addr()[i]; a < lhs_u.addr()[i+1]; ++a){
+					size_t col = lhs_u.cols()[a];
+					lhs_u.vals()[a] += tau * velocity[col] / 2 * assem.transport().vals()[a];
+				}
 			}
-			
+			// Solve
+			slv.set_matrix(lhs_u);
+			slv.solve(rhs_u, velocity);
+
 			// break conditions
 			if (it > 0){
 				//I A - rhs_a == 0 ?
@@ -738,199 +813,3 @@ TEST_CASE("Single vessel, inviscid, ver2", "[single-vessel-inviscid-explicit2]")
 	double maxp = *std::max_element(pressure.begin(), pressure.end());
 	CHECK(maxp == Approx(24.3632).margin(1e-3));
 }
-
-
-TEST_CASE("Single vessel, viscous", "[single-vessel-viscous-explicit]"){
-	ProblemData data;
-	data.L = 5.0;
-	data.mu = 4e-3;
-	data.profile_order = 9;
-	data.recompute();
-	double time = 0;
-
-	FemGrid grid(data.L, data.L*10, 1);
-	double tau = grid.h()/100;
-	std::vector<ElementBoundaryFluxes> upwind_fluxes(grid.n_elements());
-
-	VtkUtils::TimeSeriesWriter writer("single-vessel");
-	writer.set_time_step(0.005);
-
-	std::vector<double> velocity(grid.n_nodes(), 0.0);
-	std::vector<double> area(grid.n_nodes(), data.area0);
-	std::vector<double> pressure(grid.n_nodes(), 0.0);
-
-	std::vector<std::shared_ptr<IUpwindFluxCalculator>> upwind_flux_calculator(grid.n_points());
-	upwind_flux_calculator[0].reset(new InflowQFluxCalculator(grid, data, [&time](){ return time; }, 0));
-	for (size_t i=1; i<grid.n_points()-1; ++i){
-		upwind_flux_calculator[i].reset(new InternalFluxCalculator(grid, data, i-1, i));
-	}
-	upwind_flux_calculator.back().reset(new OutflowFluxCalculator(grid, data, grid.n_elements()-1));
-
-	// prepare matrix solver
-	CsrMatrix mass = grid.mass_matrix();
-	CsrMatrix tran = grid.transport_matrix();
-	AmgcMatrixSolver slv;
-	slv.set_matrix(mass);
-	
-	while (time < 2 - 1e-6){
-		time += tau;
-		std::cout << "TIME=" << time;
-		std::cout << "  Q=" << data.q_inflow(time) << std::endl;
-
-		// nodewise fluxes
-		std::vector<double> flux_a(grid.n_nodes());
-		std::vector<double> flux_u(grid.n_nodes());
-		for (size_t i=0; i<grid.n_nodes(); ++i){
-			flux_a[i] = data.flux_a(area[i], velocity[i]);
-			flux_u[i] = data.flux_u(area[i], velocity[i]);
-		}
-
-		// upwind fluxes
-		for (auto c: upwind_flux_calculator){
-			c->compute(area, velocity, upwind_fluxes);
-		}
-
-		// assemble rhs
-		// E
-		std::vector<double> rhs_a = mass.mult_vec(area);
-		std::vector<double> rhs_u = mass.mult_vec(velocity);
-		// -tau*T
-		std::vector<double> tran_a = tran.mult_vec(flux_a);
-		std::vector<double> tran_u = tran.mult_vec(flux_u);
-		for (size_t i=0; i<grid.n_nodes(); ++i){
-			rhs_a[i] -= tau * tran_a[i];
-			rhs_u[i] -= tau * tran_u[i];
-		}
-		// - coupling
-		for (size_t ielem=0; ielem<grid.n_elements(); ++ielem){
-			size_t node0 = grid.tab_elem_nodes(ielem)[0];
-			size_t node1 = grid.tab_elem_nodes(ielem)[1];
-			rhs_a[node0] += tau*upwind_fluxes[ielem].a_x0;
-			rhs_a[node1] -= tau*upwind_fluxes[ielem].a_x1;
-			rhs_u[node0] += tau*upwind_fluxes[ielem].u_x0;
-			rhs_u[node1] -= tau*upwind_fluxes[ielem].u_x1;
-		}
-
-		//solve
-		slv.solve(rhs_a, area);
-	
-		// + viscosity
-		std::vector<double> u_div_a(grid.n_nodes());
-		for (size_t i=0; i<u_div_a.size(); ++i){
-			u_div_a[i] = data.visc_coef*velocity[i]/area[i];
-		}
-		u_div_a = mass.mult_vec(u_div_a);
-		for (size_t i=0; i<rhs_u.size(); ++i){
-			rhs_u[i] += tau*u_div_a[i];
-		}
-		slv.solve(rhs_u, velocity);
-
-		for (size_t i=0; i<grid.n_nodes(); ++i){
-			pressure[i] = data.pressure(area[i]);
-		}
-		std::string out_filename = writer.add(time);
-		if (!out_filename.empty()) {
-			grid.save_vtk(area, velocity, pressure, out_filename);
-		}
-	}
-
-	//double maxp = *std::max_element(pressure.begin(), pressure.end());
-	//CHECK(maxp == Approx(24.3958).margin(1e-3));
-}
-
-//TEST_CASE("Single vessel, viscous", "[single-vessel-viscous-implicit]"){
-//        ProblemData data;
-//        data.L = 5.0;
-//        data.mu = 4e-3;
-//        data.profile_order = 9;
-//        data.recompute();
-//        double time = 0;
-
-//        FemGrid grid(data.L, data.L*10, 1);
-//        double tau = grid.h()/100;
-//        std::vector<ElementBoundaryFluxes> upwind_fluxes(grid.n_elements());
-
-//        VtkUtils::TimeSeriesWriter writer("single-vessel");
-//        writer.set_time_step(0.005);
-
-//        std::vector<double> velocity(grid.n_nodes(), 0.0);
-//        std::vector<double> area(grid.n_nodes(), data.area0);
-//        std::vector<double> pressure(grid.n_nodes(), 0.0);
-
-//        std::vector<std::shared_ptr<IUpwindFluxCalculator>> upwind_flux_calculator(grid.n_points());
-//        upwind_flux_calculator[0].reset(new InflowQFluxCalculator(grid, data, [&time](){ return time; }, 0));
-//        for (size_t i=1; i<grid.n_points()-1; ++i){
-//                upwind_flux_calculator[i].reset(new InternalFluxCalculator(grid, data, i-1, i));
-//        }
-//        upwind_flux_calculator.back().reset(new OutflowFluxCalculator(grid, data, grid.n_elements()-1));
-
-//        // prepare matrix solver
-//        CsrMatrix mass = grid.mass_matrix();
-//        CsrMatrix tran = grid.transport_matrix();
-//        AmgcMatrixSolver slv;
-//        slv.set_matrix(mass);
-	
-//        while (time < 2 - 1e-6){
-//                time += tau;
-//                std::cout << "TIME=" << time;
-//                std::cout << "  Q=" << data.q_inflow(time) << std::endl;
-
-//                // nodewise fluxes
-//                std::vector<double> flux_a(grid.n_nodes());
-//                std::vector<double> flux_u(grid.n_nodes());
-//                for (size_t i=0; i<grid.n_nodes(); ++i){
-//                        flux_a[i] = data.flux_a(area[i], velocity[i]);
-//                        flux_u[i] = data.flux_u(area[i], velocity[i]);
-//                }
-
-//                // upwind fluxes
-//                for (auto c: upwind_flux_calculator){
-//                        c->compute(area, velocity, upwind_fluxes);
-//                }
-
-//                // assemble rhs
-//                // E
-//                std::vector<double> rhs_a = mass.mult_vec(area);
-//                std::vector<double> rhs_u = mass.mult_vec(velocity);
-//                // -tau*T
-//                std::vector<double> tran_a = tran.mult_vec(flux_a);
-//                std::vector<double> tran_u = tran.mult_vec(flux_u);
-//                for (size_t i=0; i<grid.n_nodes(); ++i){
-//                        rhs_a[i] -= tau * tran_a[i];
-//                        rhs_u[i] -= tau * tran_u[i];
-//                }
-//                // - coupling
-//                for (size_t ielem=0; ielem<grid.n_elements(); ++ielem){
-//                        size_t node0 = grid.tab_elem_nodes(ielem)[0];
-//                        size_t node1 = grid.tab_elem_nodes(ielem)[1];
-//                        rhs_a[node0] += tau*upwind_fluxes[ielem].a_x0;
-//                        rhs_a[node1] -= tau*upwind_fluxes[ielem].a_x1;
-//                        rhs_u[node0] += tau*upwind_fluxes[ielem].u_x0;
-//                        rhs_u[node1] -= tau*upwind_fluxes[ielem].u_x1;
-//                }
-//                // + viscosity
-//                std::vector<double> u_div_a(grid.n_nodes());
-//                for (size_t i=0; i<u_div_a.size(); ++i){
-//                        u_div_a[i] = data.visc_coef*velocity[i]/area[i];
-//                }
-//                u_div_a = mass.mult_vec(u_div_a);
-//                for (size_t i=0; i<rhs_u.size(); ++i){
-//                        rhs_u[i] += tau*u_div_a[i];
-//                }
-
-//                //solve
-//                slv.solve(rhs_a, area);
-//                slv.solve(rhs_u, velocity);
-
-//                for (size_t i=0; i<grid.n_nodes(); ++i){
-//                        pressure[i] = data.pressure(area[i]);
-//                }
-//                std::string out_filename = writer.add(time);
-//                if (!out_filename.empty()) {
-//                        grid.save_vtk(area, velocity, pressure, out_filename);
-//                }
-//        }
-
-//        double maxp = *std::max_element(pressure.begin(), pressure.end());
-//        CHECK(maxp == Approx(24.3958).margin(1e-3));
-//}
