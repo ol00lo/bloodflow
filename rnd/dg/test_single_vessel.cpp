@@ -136,6 +136,7 @@ public:
 		}
 		return ret;
 	}
+
 private:
 	const size_t _power;
 	mutable CsrStencil _stencil;
@@ -195,6 +196,11 @@ struct ElementBoundaryFluxes{
 	double a_x1 = 0;
 	double u_x0 = 0;
 	double u_x1 = 0;
+
+	double upwind_area_x0 = 0;
+	double upwind_area_x1 = 0;
+	double upwind_velo_x0 = 0;
+	double upwind_velo_x1 = 0;
 };
 
 struct ProblemData{
@@ -292,6 +298,9 @@ public:
 		fluxes[_cell_right].a_x0 = fa;
 		fluxes[_cell_right].u_x0 = fu;
 
+		fluxes[_cell_right].upwind_area_x0 = area_upw;
+		fluxes[_cell_right].upwind_velo_x0 = velo_upw;
+
 		_a = area_upw;
 	}
 private:
@@ -357,6 +366,9 @@ public:
 
 		fluxes[_cell_left].a_x1 = fa;
 		fluxes[_cell_left].u_x1 = fu;
+
+		fluxes[_cell_left].upwind_area_x1 = area_upw;
+		fluxes[_cell_left].upwind_velo_x1 = velo_upw;
 	}
 private:
 	const ProblemData& _data;
@@ -390,6 +402,11 @@ public:
 		fluxes[_cell_right].a_x0 = fa;
 		fluxes[_cell_left].u_x1 = fu;
 		fluxes[_cell_right].u_x0 = fu;
+
+		fluxes[_cell_right].upwind_area_x0 = area_upw;
+		fluxes[_cell_right].upwind_velo_x0 = velo_upw;
+		fluxes[_cell_left].upwind_area_x1 = area_upw;
+		fluxes[_cell_left].upwind_velo_x1 = velo_upw;
 	}
 private:
 	const ProblemData& _data;
@@ -533,12 +550,14 @@ public:
 		return _mass;
 	}
 
-	const CsrMatrix& transport() const{
+	const CsrMatrix& block_transport() const{
 		return _tran;
 	}
 
 	void actualize_fluxes(double time, const std::vector<double>& area, const std::vector<double>& velo){
 		_time = time;
+		_u = velo;
+		_area = area;
 	
 		// compute upwind fluxes
 		for (auto c: _upwind_flux_calculator){
@@ -592,6 +611,58 @@ public:
 		return _mass.mult_vec(_visc);
 	}
 
+	CsrMatrix block_u_transport() const {
+		CsrMatrix ret(_tran);
+		for (size_t i=0; i<_grid.n_nodes(); ++i){
+			for (size_t a=ret.addr()[i]; a < ret.addr()[i+1]; ++a){
+				size_t col = ret.cols()[a];
+				ret.vals()[a] *= _u[col];
+			}
+		}
+		return ret;
+	}
+
+	std::vector<double> coupling_flux_ua() const{
+		std::vector<double> ret(_grid.n_nodes(), 0.0);
+		for (size_t ielem=0; ielem<_grid.n_elements(); ++ielem){
+			size_t node0 = _grid.tab_elem_nodes(ielem)[0];
+			size_t node1 = _grid.tab_elem_nodes(ielem)[1];
+			ret[node0] -= _upwind_fluxes[ielem].upwind_area_x0 * _upwind_fluxes[ielem].upwind_velo_x0;
+			ret[node1] += _upwind_fluxes[ielem].upwind_area_x1 * _upwind_fluxes[ielem].upwind_velo_x1;
+		}
+		return ret;
+	}
+
+	std::vector<double> coupling_flux_u2() const{
+		std::vector<double> ret(_grid.n_nodes(), 0.0);
+		for (size_t ielem=0; ielem<_grid.n_elements(); ++ielem){
+			size_t node0 = _grid.tab_elem_nodes(ielem)[0];
+			size_t node1 = _grid.tab_elem_nodes(ielem)[1];
+			ret[node0] -= _upwind_fluxes[ielem].upwind_velo_x0 * _upwind_fluxes[ielem].upwind_velo_x0;
+			ret[node1] += _upwind_fluxes[ielem].upwind_velo_x1 * _upwind_fluxes[ielem].upwind_velo_x1;
+		}
+		return ret;
+	}
+
+	std::vector<double> coupling_flux_p() const{
+		std::vector<double> ret(_grid.n_nodes(), 0.0);
+		for (size_t ielem=0; ielem<_grid.n_elements(); ++ielem){
+			size_t node0 = _grid.tab_elem_nodes(ielem)[0];
+			size_t node1 = _grid.tab_elem_nodes(ielem)[1];
+			ret[node0] -= _data.pressure(_upwind_fluxes[ielem].upwind_area_x0);
+			ret[node1] += _data.pressure(_upwind_fluxes[ielem].upwind_area_x1);
+		}
+		return ret;
+	}
+
+	double compute_residual(const CsrMatrix& lhs, const std::vector<double>& rhs, const std::vector<double>& u) const{
+		std::vector<double> r = lhs.mult_vec(u);
+		for (size_t i=0; i<r.size(); ++i){
+			r[i] = rhs[i] - r[i];
+		}
+		return vector_norm2(r);
+	}
+
 	double vector_norm2(const std::vector<double>& v) const{
 		double s = 0;
 		for (size_t i=0; i<_grid.n_nodes(); ++i){
@@ -611,6 +682,7 @@ private:
 	std::vector<std::shared_ptr<IUpwindFluxCalculator>> _upwind_flux_calculator;
 	std::vector<ElementBoundaryFluxes> _upwind_fluxes;
 	std::vector<double> _flux_a, _flux_u, _visc;
+	std::vector<double> _u, _area;
 };
 
 };
@@ -692,113 +764,111 @@ TEST_CASE("Single vessel, inviscid, implicit", "[single-vessel-inviscid-implicit
 	FemGrid grid(data.L, data.L*100, 1);
 	double tau = grid.h()/100;
 
-	VtkUtils::TimeSeriesWriter writer("single-vessel");
-	writer.set_time_step(0.005);
 
 	std::vector<double> velocity(grid.n_nodes(), 0.0);
 	std::vector<double> area(grid.n_nodes(), data.area0);
 	std::vector<double> pressure(grid.n_nodes(), 0.0);
+	for (size_t i=0; i<grid.n_nodes(); ++i){
+		pressure[i] = data.pressure(area[i]);
+	}
 
 	Assembler assem(grid, data);
 
-	// prepare matrix solver
 	AmgcMatrixSolver slv;
+
+	VtkUtils::TimeSeriesWriter writer("single-vessel");
+	writer.set_time_step(0.005);
+	std::string out_filename = writer.add(0);
+	if (!out_filename.empty()) {
+		grid.save_vtk(area, velocity, pressure, out_filename);
+	}
 	
-	size_t iter_max = 20;
+	size_t iter_max = 1;
 
 	while (time < 0.2 - 1e-6){
-		assem.actualize_fluxes(time, area, velocity);
-		std::vector<double> dfadx = assem.dfa_dx(); 
-		std::vector<double> dfudx = assem.dfu_dx();
-		std::vector<double> visc_term = assem.viscous_term();
+		// assemble right hand side
+		std::vector<double> rhs1_a = assem.mass().mult_vec(area);
+		std::vector<double> rhs1_u = assem.mass().mult_vec(velocity);
 
 		time += tau;
 		std::cout << "TIME=" << time;
 		std::cout << "  Q=" << data.q_inflow(time) << std::endl;
-		
-		// rhs_a  = A
-		std::vector<double> rhs_a = assem.mass().mult_vec(area);
-		// rhs_u = u
-		std::vector<double> rhs1_u = assem.mass().mult_vec(velocity);
+
+		double err_a = 1e6;
+		double err_u = 1e6;
 
 		for (size_t it=0; it < iter_max; ++it){
-			// 1. A equation
+			// 1. --- Area equation
 			assem.actualize_fluxes(time, area, velocity);
 			// 1.1 LHS
 			CsrMatrix lhs_a = assem.mass();
-			for (size_t i=0; i<grid.n_nodes(); ++i){
-				for (size_t a = lhs_a.addr()[i]; a < lhs_a.addr()[i+1]; ++a){
-					size_t col = lhs_a.cols()[a];
-					lhs_a.vals()[a] += tau * velocity[col] * assem.transport().vals()[a];
-				}
+			CsrMatrix block_u_transport = assem.block_u_transport();
+			for (size_t i=0; i<lhs_a.n_nonzeros(); ++i){
+				lhs_a.vals()[i] -= tau * block_u_transport.vals()[i];
 			}
-			// 1.2 Solve
+			// 1.2 RHS
+			std::vector<double> rhs_a(rhs1_a);
+			// coupling flux
+			std::vector<double> coupling_flux_ua = assem.coupling_flux_ua();
+			for (size_t i=0; i<rhs_a.size(); ++i){
+				rhs_a[i] -= tau*coupling_flux_ua[i];
+			}
+			// 1.3 residual
+			if (it > 0){
+				err_a = assem.compute_residual(lhs_a, rhs_a, area);
+			}
+
+			// 1.4 Solve
 			slv.set_matrix(lhs_a);
 			slv.solve(rhs_a, area);
 
-			// 2. u equation
+			// 2. ---- Velocity equation
 			assem.actualize_fluxes(time, area, velocity);
-			// 2.1 LHS + RHS
+			// 2.1 LHS
 			CsrMatrix lhs_u = assem.mass();
-			std::vector<double> prho(grid.n_nodes());
-			for (size_t i=0; i<grid.n_nodes(); ++i){
-				prho[i] = data.pressure(area[i]) / data.rho;
+			block_u_transport = assem.block_u_transport();
+			for (size_t i=0; i<lhs_u.n_nonzeros(); ++i){
+				lhs_u.vals()[i] -= 0.5 * tau * block_u_transport.vals()[i];
 			}
-			std::vector<double> rhs_u = assem.mass().mult_vec(prho);
-			for (size_t i=0; i<grid.n_nodes(); ++i){
-				rhs_u[i] = -tau*rhs_u[i] + rhs1_u[i];
-				for (size_t a = lhs_u.addr()[i]; a < lhs_u.addr()[i+1]; ++a){
-					size_t col = lhs_u.cols()[a];
-					lhs_u.vals()[a] += tau * velocity[col] / 2 * assem.transport().vals()[a];
-				}
+			// 2.2 RHS
+			std::vector<double> rhs_u(rhs1_u);
+			// coupling flux
+			std::vector<double> coupling_flux_u2 = assem.coupling_flux_u2();
+			std::vector<double> coupling_flux_p = assem.coupling_flux_p();
+			for (size_t i=0; i<rhs_a.size(); ++i){
+				rhs_u[i] -= tau*(0.5*coupling_flux_u2[i] + coupling_flux_p[i]/data.rho);
 			}
-			// Solve
+			// block p 
+			std::vector<double> p(grid.n_nodes());
+			for (size_t i=0; i<grid.n_nodes(); ++i){
+				p[i] = data.pressure(area[i]);
+			}
+			p = assem.block_transport().mult_vec(p);
+			for (size_t i=0; i<rhs_a.size(); ++i){
+				rhs_u[i] += tau * p[i] / data.rho;
+			}
+
+			// 2.3 residual
+			if (it > 0){
+				err_u = assem.compute_residual(lhs_u, rhs_u, velocity);
+			}
+			// 2.4 Solve
 			slv.set_matrix(lhs_u);
 			slv.solve(rhs_u, velocity);
 
 			// break conditions
 			if (it > 0){
-				//I A - rhs_a == 0 ?
-				std::vector<double> ra = assem.mass().mult_vec(area);
-				for (size_t i=0; i<grid.n_nodes(); ++i){
-					ra[i] -= rhs_a[i];
-				}
-				double eps_a = assem.vector_norm2(ra) / tau;
-
-				//I u - rhs_u == 0 ?
-				std::vector<double> ru = assem.mass().mult_vec(velocity);
-				for (size_t i=0; i<grid.n_nodes(); ++i){
-					ru[i] -= rhs_u[i];
-				}
-				double eps_u = assem.vector_norm2(ru) / tau;
-
-				std::cout << eps_u << " " << eps_a << std::endl;
-				if (std::max(eps_u, eps_a) < 1e-12){
+				std::cout << err_u << " " << err_a << std::endl;
+				if (std::max(err_u, err_a) < 1e-12){
 					std::cout << "converged in " << it << " iterations" << std::endl;
 					break;
 				} else if (it == iter_max - 1){
-					std::cout << "Warning: internal iterations did not converge: " << eps_u << ", " << eps_a << std::endl;
+					std::cout << "Warning: internal iterations did not converge: " << err_u << ", " << err_a << std::endl;
 				}
 			}
 
 			slv.solve(rhs_a, area);
 			slv.solve(rhs_u, velocity);
-			//auto area1 = area;
-			//auto velocity1 = velocity;
-			//slv.solve(rhs_a, area1);
-			//slv.solve(rhs_u, velocity1);
-			//double w = 0.5;
-			//for (size_t i=0; i<grid.n_nodes(); ++i){
-				//area[i] = w * area1[i] + (1 - w)*area[i];
-				//velocity[i] = w * velocity1[i] + (1 - w)*velocity[i];
-			//}
-
-			if (it != iter_max-1){
-				assem.actualize_fluxes(time, area, velocity);
-				dfadx = assem.dfa_dx();
-				dfudx = assem.dfu_dx();
-				visc_term = assem.viscous_term();
-			}
 		}
 
 		for (size_t i=0; i<grid.n_nodes(); ++i){

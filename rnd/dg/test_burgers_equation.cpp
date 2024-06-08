@@ -397,10 +397,12 @@ TEST_CASE("Inviscid Burgers equation, implicit, iterflux", "[Burgers-inviscid-im
 			std::vector<double> rhs(rhs1);
 			std::vector<double> u2(grid.n_nodes());
 			for (size_t i=0; i<u2.size(); ++i) u2[i] = u[i]*u[i];
+
 			//// var1: goes to rhs
 			//for (size_t i=0; i<grid.n_nodes(); ++i){
 			//        rhs[i] -= tau * coupled_transport.mult_vec(i, u2) / 2.0;
 			//}
+	
 			// var2: goes to the lhs diagonal
 			for (size_t i=0; i<lhs.n_rows(); ++i){
 				double denum = (u[i] == 0) ? 1e-16 : u[i];
@@ -413,6 +415,7 @@ TEST_CASE("Inviscid Burgers equation, implicit, iterflux", "[Burgers-inviscid-im
 					}
 				}
 			}
+
 			//// var3: goes to the both sides
 			//for (size_t i=0; i<lhs.n_rows(); ++i){
 			//        double v = coupled_transport.mult_vec(i, u2) / 2.0;
