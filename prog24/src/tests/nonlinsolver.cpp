@@ -1,12 +1,11 @@
 #include "tests/nonlinsolver.hpp"
-#include <iostream>
 #include <cmath>
-#include <vector>
+#include <iostream>
 #include <sstream>
+#include <vector>
 
 void solve_nonlinear_system(const INonlinearSystem2& sys, double& x1, double& x2, double eps, size_t maxit)
 {
-
     size_t it = 0;
     double n2 = 0;
     for (it = 0; it < maxit; ++it)
@@ -48,7 +47,7 @@ double determinant(std::vector<std::vector<double>> matrix, int size)
     {
         std::vector<std::vector<double>> cofactor(size - 1);
         for (int j = 0; j < size - 1; j++)
-            cofactor[j].resize(size-1);
+            cofactor[j].resize(size - 1);
 
         int sub_i = 0, sub_j = 0;
         for (int j = 1; j < size; j++)
@@ -103,7 +102,6 @@ std::array<double, 36> inverse6_6(std::vector<std::vector<double>> a, double det
     return res;
 }
 
-
 void solve_nonlinear_system(const INonlinearSystem4& sys, double& x1, double& x2, double& x3, double& x4, double eps,
                             size_t maxit)
 {
@@ -148,7 +146,7 @@ void solve_nonlinear_system(const INonlinearSystem6& sys, double& x1, double& x2
     for (it = 0; it < maxit; ++it)
     {
         std::array<double, 6> v = sys.f(x1, x2, x3, x4, x5, x6);
-        n2 = v[0] * v[0] + v[1] * v[1] + v[2] * v[2] + v[3] * v[3]+ v[4]*v[4]+v[5]*v[5];
+        n2 = v[0] * v[0] + v[1] * v[1] + v[2] * v[2] + v[3] * v[3] + v[4] * v[4] + v[5] * v[5];
         std::cout << x1 << " " << x2 << " " << x3 << " " << x4 << " " << std::sqrt(n2) << std::endl;
         if (n2 < eps * eps)
         {

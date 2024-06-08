@@ -10,6 +10,8 @@ set (SRC
 	tests/dg_test.cpp
 	tests/vessels_dg_test.cpp
 	tests/nonlinsolver.cpp
+	tests/test_burgers_equation.cpp
+	tests/test_single_vessel.cpp
 	bflow/vessel_graph.cpp
 	bflow/graph_grid.cpp
 	bflow/vtk.cpp
@@ -17,6 +19,9 @@ set (SRC
 	bflow/debug/printer.cpp
 	bflow/matrix_solver.cpp
 	bflow/time_series_writer.cpp
+	bflow/fem_grid.cpp
+	bflow/flux_calculator.cpp
+	bflow/assembler_flux.cpp
 )
 set(HEADERS
 	tests/test_utils.hpp
@@ -29,5 +34,8 @@ set(HEADERS
 	bflow/matrix_solver.hpp
 	bflow/time_series_writer.hpp
 	bflow/macros.hpp
+	bflow/fem_grid.hpp
+	bflow/flux_calculator.hpp
+	bflow/assembler_flux.hpp
 )
 add_executable(bflow_test ${SRC} ${HEADERS})
