@@ -5,7 +5,7 @@
 #include <iomanip>
 #include <sstream>
 #include <string>
-#define PI 3.1415926
+#define PI 3.14159265358979323846
 
 using namespace bflow;
 

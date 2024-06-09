@@ -2,6 +2,7 @@
 #define ASSEMBLER_FLUX_HPP
 #include"bflow/fem_grid.hpp"
 #include"bflow/flux_calculator.hpp"
+#include <memory>
 using namespace bflow;
 
 class AssemblerFlux

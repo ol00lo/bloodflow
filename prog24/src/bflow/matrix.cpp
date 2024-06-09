@@ -120,6 +120,24 @@ std::vector<double> CsrMatrix::mult_vec(const std::vector<double>& u) const
 
     return ret;
 }
+
+double CsrMatrix::mult_vec(int irow, const std::vector<double>& u) const
+{
+    const std::vector<int>& a = addr();
+    const std::vector<int>& c = cols();
+    const std::vector<double>& v = vals();
+
+    double ret = 0;
+    size_t start = a[irow];
+    size_t end = a[irow + 1];
+    for (size_t i = start; i < end; ++i)
+    {
+        ret += v[i] * u[c[i]];
+    }
+
+    return ret;
+}
+
 void LodMatrix::set_value(int i, int j, double val)
 {
     validate_ij(i, j);

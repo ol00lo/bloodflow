@@ -41,6 +41,7 @@ public:
     void set_unit_row(size_t irow);
     void set_stencil(const std::vector<std::set<int>>& stencil_set);
     std::vector<double> mult_vec(const std::vector<double>& u) const;
+    double mult_vec(int irow, const std::vector<double>& u) const;
 
 private:
     std::vector<int> _addr;

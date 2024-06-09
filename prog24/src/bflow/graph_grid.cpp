@@ -126,8 +126,8 @@ std::vector<int> GraphGrid::tab_point_cell(int point) const
 
 int GraphGrid::find_edge_by_cell(int cell) const
 {
+    _THROW_NOT_IMP_;
     return _cell_edges.at(cell);
-    // return 0;
 }
 
 std::vector<int> GraphGrid::points_by_edge(int edge) const

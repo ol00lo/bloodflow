@@ -94,14 +94,12 @@ TEST_CASE("Transport equation, upwind", "[upwind-transport]")
     }
     CsrMatrix lhs = mass;
     CsrMatrix rhs_mat = mass;
+    double theta = 0.5;  // crank-nicolson
+    //double theat = 1.5;  // adams-bashforth
     for (size_t i = 0; i < mass.n_nonzeros(); ++i)
     {
-        // ab
-        lhs.vals()[i] += 3.0 * tau / 2.0 * transport.vals()[i];
-        rhs_mat.vals()[i] += tau / 2 * transport.vals()[i];
-        // kn
-        // lhs.vals()[i] += tau / 2.0 * transport.vals()[i];
-        // rhs_mat.vals()[i] -= tau / 2 * transport.vals()[i];
+        lhs.vals()[i] += theta * tau * transport.vals()[i];
+        rhs_mat.vals()[i] -= (1 - theta) * tau * transport.vals()[i];
     }
     // left boundary condition
     lhs.set_unit_row(0);
@@ -126,16 +124,16 @@ TEST_CASE("Transport equation, upwind", "[upwind-transport]")
         // assemble rhs
         std::vector<double> rhs = rhs_mat.mult_vec(u);
         // left boundary condition
-        rhs[0] = 0.0;
+        rhs[0] = exact1(0, t);
 
         slv.solve(rhs, u);
 
         // std::cout << t << "  ";
-        std::cout << norm2(grid, u, t) << std::endl;
+        //std::cout << norm2(grid, u, t) << std::endl;
 
         saver.new_time_step(t);
         saver.save_vtk_point_data(u, "data");
     }
     //CHECK(u[50] == Approx(1.071884924).margin(1e-6));
-    CHECK(norm2(grid, u, 2.0) == Approx(0.102352).margin(1e-4));
+    CHECK(norm2(grid, u, 2.0) == Approx(0.284369755).margin(1e-4));
 }

@@ -2,6 +2,8 @@
 #include "ghc/filesystem.hpp"
 #include <iomanip>
 #include <sstream>
+#include <cmath>
+
 namespace fs = ghc::filesystem;
 void create_directory(std::string path, bool purge)
 {

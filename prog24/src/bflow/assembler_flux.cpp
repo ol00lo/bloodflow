@@ -1,4 +1,4 @@
-#include "bflow/assembler_flux.hpp"
+#include "assembler_flux.hpp"
 using namespace bflow;
 
 AssemblerFlux::AssemblerFlux(const FemGrid& grid, const ProblemData& data) : _grid(grid), _data(data)
