@@ -209,7 +209,7 @@ std::string VtkUtils::TimeSeriesWriter::add(double tm){
 	}
 
 	std::ostringstream fn;
-	fn << std::setfill('0') << std::setw(8) << std::fixed << std::setprecision(4) << tm << ".vtk";
+	fn << std::setfill('0') << std::setw(12) << std::fixed << std::setprecision(8) << tm << ".vtk";
 	std::string ret = _stem + '/' + fn.str();
 
 	std::ostringstream oss;

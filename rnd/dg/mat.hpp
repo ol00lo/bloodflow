@@ -36,6 +36,7 @@ public:
 	double value(size_t irow, size_t icol) const;
 	std::vector<double> mult_vec(const std::vector<double>& u) const;
 	double mult_vec(size_t irow, const std::vector<double>& u) const;
+	void plus(double k, const CsrMatrix& other);
 private:
 	std::vector<double> _vals;
 };

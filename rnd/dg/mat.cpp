@@ -151,6 +151,16 @@ void CsrMatrix::set_unit_row(size_t irow){
 	}
 }
 
+void CsrMatrix::plus(double k, const CsrMatrix& other){
+	if (n_rows() != other.n_rows() || n_nonzeros() != other.n_nonzeros()){
+		throw std::runtime_error("can not sum up matrices with different stencils");
+	}
+	for (size_t i=0; i<n_nonzeros(); ++i){
+		_vals[i] += k * other._vals[i];
+	}
+}
+
+
 class AmgcMatrixSolver::Impl{
 public:
 	using param_t = boost::property_tree::ptree;
