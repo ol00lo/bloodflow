@@ -239,3 +239,24 @@ void AmgcMatrixSolver::solve_slae(const CsrMatrix& mat, const std::vector<double
 	slv.set_matrix(mat);
 	slv.solve(rhs, x);
 }
+
+std::ostream& operator<<(std::ostream& s, const CsrMatrix& mat){
+	int p = 8; 
+	for (int i = 0; i < mat.n_rows(); i++)
+	{
+		for (int j = 0; j < mat.n_rows(); j++)
+		{
+			if (mat.is_in_stencil(i, j) == false)
+			{
+				s << std::setw(p) << "*";
+			}
+			else
+			{
+				double v = std::round(mat.value(i, j)*10000)/10000.0;
+				s << std::setw(p) << v;
+			}
+		}
+		s << std::endl;
+	}
+	return s;
+}

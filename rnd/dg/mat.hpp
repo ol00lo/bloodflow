@@ -61,4 +61,6 @@ private:
 	std::unique_ptr<Impl> _pimpl;
 };
 
+std::ostream& operator<<(std::ostream& os, const CsrMatrix& mat);
+
 #endif
