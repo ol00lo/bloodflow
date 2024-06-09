@@ -10,6 +10,11 @@
 #include <string>
 #include "sys/types.h"
 
+#ifdef WIN32
+#define __PRETTY_FUNCTION__ __FUNCSIG__
+#endif
+
+
 #define _THROW_NOT_IMP_ \
 {\
 	std::ostringstream oss; \
