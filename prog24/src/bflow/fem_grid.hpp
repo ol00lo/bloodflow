@@ -6,7 +6,7 @@ namespace bflow
 class FemGrid
 {
 public:
-    FemGrid(const GraphGrid& grid, std::vector<Point2> nodes_coo);
+    FemGrid(const GraphGrid& grid);
     double h() const;
     size_t n_nodes() const;
     size_t n_elements() const;
@@ -16,9 +16,11 @@ public:
     std::vector<double> load_vector() const;
     std::vector<int> tab_elem_nodes(int ielem) const;
     double full_length() const;
+    // integral[ phi_j phi_i dx]
     CsrMatrix mass_matrix() const;
-    CsrMatrix transport_matrix() const;
+    // -integral[ (phi_j) (d phi_i / dx) dx]
     CsrMatrix block_transport_matrix() const;
+    // phi_j phi_i (x1) - phi_j phi_i (x0)
     CsrMatrix coupled_transport_matrix() const;
 
 private:

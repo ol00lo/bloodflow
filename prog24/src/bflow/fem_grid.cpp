@@ -2,7 +2,7 @@
 
 using namespace bflow;
 
-FemGrid::FemGrid(const GraphGrid& grid, std::vector<Point2> nodes_coo) : _power(grid.n_midnodes)
+FemGrid::FemGrid(const GraphGrid& grid) : _power(grid.n_midnodes)
 {
     if (_power > 6)
     {
@@ -78,8 +78,7 @@ std::vector<double> FemGrid::load_vector() const
 
 double FemGrid::full_length() const
 {
-    return _points.back() - _points[0];
-    // return _len;
+    return _len;
 }
 
 CsrMatrix FemGrid::mass_matrix() const
@@ -101,26 +100,26 @@ CsrMatrix FemGrid::mass_matrix() const
     return ret;
 }
 
-CsrMatrix FemGrid::transport_matrix() const
-{
-    CsrMatrix ret(stencil());
-    std::vector<double> local = local_transport_matrix();
+//CsrMatrix FemGrid::transport_matrix() const
+//{
+//    CsrMatrix ret(stencil());
+//    std::vector<double> local = local_transport_matrix();
 
-    for (size_t ielem = 0; ielem < n_elements(); ++ielem)
-    {
-        std::vector<int> lg = tab_elem_nodes(ielem);
+//    for (size_t ielem = 0; ielem < n_elements(); ++ielem)
+//    {
+//        std::vector<int> lg = tab_elem_nodes(ielem);
 
-        // block diagonal
-        for (size_t irow = 0; irow < n_local_bases(); ++irow)
-            for (size_t icol = 0; icol < n_local_bases(); ++icol)
-            {
-                double v = local[irow * n_local_bases() + icol];
-                size_t iaddr = ret.find_index(lg[irow], lg[icol]);
-                ret.vals()[iaddr] += v;
-            }
-    }
-    return ret;
-}
+//        // block diagonal
+//        for (size_t irow = 0; irow < n_local_bases(); ++irow)
+//            for (size_t icol = 0; icol < n_local_bases(); ++icol)
+//            {
+//                double v = local[irow * n_local_bases() + icol];
+//                size_t iaddr = ret.find_index(lg[irow], lg[icol]);
+//                ret.vals()[iaddr] += v;
+//            }
+//    }
+//    return ret;
+//}
 
 CsrMatrix FemGrid::block_transport_matrix() const
 {

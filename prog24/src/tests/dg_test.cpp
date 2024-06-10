@@ -26,7 +26,6 @@ double exact(double x, double t = 0)
 double exact1(double x, double t = 0)
 {
     constexpr double pi = 3.1415926535;
-    constexpr double eps = 1e-6;
     return sin(2 * pi * (x - t));
 }
 
@@ -71,15 +70,11 @@ TEST_CASE("Transport equation, upwind", "[upwind-transport]")
     VesselGraph gr1(node, ed);
     GraphGrid grid1(gr1, 0.1, 2);
     std::vector<Point2> nodes_coo = generate_nodes_coo(gr1);
-    FemGrid grid(grid1, nodes_coo);
+    FemGrid grid(grid1);
     double tau = grid.h() / 2;
 
     CsrMatrix mass = grid.mass_matrix();
-    CsrMatrix transport = grid.transport_matrix();
-    for (size_t i = 0; i < transport.n_nonzeros(); i++)
-    {
-        transport.vals()[i] *= -1;
-    }
+    CsrMatrix transport = grid.block_transport_matrix();
     // upwind coupling
     for (size_t ielem = 0; ielem < grid.n_elements(); ielem++)
     {

@@ -41,11 +41,11 @@ TEST_CASE("Single vessel, inviscid2, ver1", "[single-vessel-inviscid-explicit1]"
     std::vector<double> ed = {data.L};
     VesselGraph gr1(node, ed);
     GraphGrid grid1(gr1, data.L/100, 1);
-    std::vector<Point2> nodes_coo = generate_nodes_coo(gr1);
-    FemGrid grid(grid1, nodes_coo);
+    FemGrid grid(grid1);
     double tau = grid.h() / 100;
     std::vector<ElementBoundaryFluxes> upwind_fluxes(grid.n_elements());
 
+    std::vector<Point2> nodes_coo = generate_nodes_coo(gr1);
     NonstatGridSaver saver(grid1, nodes_coo, "bebe");
 
     std::vector<double> velocity(grid.n_nodes(), 0.0);
@@ -66,7 +66,7 @@ TEST_CASE("Single vessel, inviscid2, ver1", "[single-vessel-inviscid-explicit1]"
 
     // prepare matrix solver
     CsrMatrix mass = grid.mass_matrix();
-    CsrMatrix tran = grid.transport_matrix();
+    CsrMatrix tran = grid.block_transport_matrix();
     AmgcMatrixSolver slv;
     slv.set_matrix(mass);
     double t = 0;
@@ -100,8 +100,8 @@ TEST_CASE("Single vessel, inviscid2, ver1", "[single-vessel-inviscid-explicit1]"
         std::vector<double> tran_u = tran.mult_vec(flux_u);
         for (size_t i = 0; i < grid.n_nodes(); ++i)
         {
-            rhs_a[i] += tau * tran_a[i];
-            rhs_u[i] += tau * tran_u[i];
+            rhs_a[i] -= tau * tran_a[i];
+            rhs_u[i] -= tau * tran_u[i];
         }
         // + coupling
         for (size_t ielem = 0; ielem < grid.n_elements(); ++ielem)
@@ -147,10 +147,10 @@ TEST_CASE("Single vessel, inviscid, ver2", "[single-vessel-inviscid-explicit2]")
     std::vector<double> ed = {data.L};
     VesselGraph gr1(node, ed);
     GraphGrid grid1(gr1, data.L / 100);
-    std::vector<Point2> nodes_coo = generate_nodes_coo(gr1);
-    FemGrid grid(grid1, nodes_coo);
+    FemGrid grid(grid1);
     double tau = grid.h() / 100;
 
+    std::vector<Point2> nodes_coo = generate_nodes_coo(gr1);
     NonstatGridSaver saver(grid1, nodes_coo, "bebe");
 
     std::vector<double> velocity(grid.n_nodes(), 0.0);
@@ -230,9 +230,8 @@ TEST_CASE("Single vessel, inviscid, implicit", "[single-vessel-inviscid-implicit
     std::vector<std::vector<int>> node = {{0}, {0}};
     std::vector<double> ed = {data.L};
     VesselGraph gr1(node, ed);
-    GraphGrid grid1(gr1, data.L / 100, 1);
-    std::vector<Point2> nodes_coo = generate_nodes_coo(gr1);
-    FemGrid grid(grid1, nodes_coo);
+    GraphGrid grid1(gr1, data.L / 30, 1);
+    FemGrid grid(grid1);
     double tau = grid.h() / 100;
 
     std::vector<double> velocity(grid.n_nodes(), 0.0);
@@ -246,13 +245,14 @@ TEST_CASE("Single vessel, inviscid, implicit", "[single-vessel-inviscid-implicit
     AssemblerFlux assem(grid, data);
     AmgcMatrixSolver slv;
 
+    std::vector<Point2> nodes_coo = generate_nodes_coo(gr1);
     NonstatGridSaver saver(grid1, nodes_coo, "bebe");
     saver.new_time_step(0);
     saver.save_vtk_point_data(area, "area");
     saver.save_vtk_point_data(velocity, "velocity");
     saver.save_vtk_point_data(pressure, "pressure");
 
-    size_t iter_max = 1;
+    size_t iter_max = 100;
     double t = 0.0;
     while (time < 0.2 - 1e-6)
     {
@@ -321,10 +321,10 @@ TEST_CASE("Single vessel, inviscid, implicit", "[single-vessel-inviscid-implicit
             {
                 p[i] = data.pressure(area[i]);
             }
-            p = assem.block_transport().mult_vec(p);
+            auto tmp = assem.block_transport().mult_vec(p);
             for (size_t i = 0; i < rhs_a.size(); ++i)
             {
-                rhs_u[i] += tau * p[i] / data.rho;
+                rhs_u[i] -= tau * tmp[i] / data.rho;
             }
 
             // 2.3 residual
@@ -371,5 +371,5 @@ TEST_CASE("Single vessel, inviscid, implicit", "[single-vessel-inviscid-implicit
     }
 
     double maxp = *std::max_element(pressure.begin(), pressure.end());
-    CHECK(maxp == Approx(24.3632).margin(1e-3));
+    CHECK(maxp == Approx(14.0287775452).margin(1e-3));
 }

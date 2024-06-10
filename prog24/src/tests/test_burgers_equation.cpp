@@ -22,15 +22,11 @@ TEST_CASE("Inviscid Burgers equation, explicit", "[Burgers-inviscid-explicit]")
     VesselGraph gr1(node, ed);
     GraphGrid grid1(gr1, 0.1);
     std::vector<Point2> nodes_coo = generate_nodes_coo(gr1);
-    FemGrid grid(grid1, nodes_coo);
+    FemGrid grid(grid1);
     double tau = grid.h() / 2;
 
     CsrMatrix mass = grid.mass_matrix();
-    CsrMatrix transport = grid.transport_matrix();
-    for (size_t i = 0; i < transport.n_nonzeros(); i++)
-    {
-        transport.vals()[i] *= -1;
-    }
+    CsrMatrix transport = grid.block_transport_matrix();
     // upwind coupling
     for (int ielem = 0; ielem < grid.n_elements(); ielem++)
     {
@@ -99,15 +95,11 @@ TEST_CASE("Inviscid Burgers equation, implicit", "[Burgers-inviscid-implicit][am
     VesselGraph gr1(node, ed);
     GraphGrid grid1(gr1, 0.1);
     std::vector<Point2> nodes_coo = generate_nodes_coo(gr1);
-    FemGrid grid(grid1, nodes_coo);
+    FemGrid grid(grid1);
     double tau = grid.h() / 2;
 
     CsrMatrix mass = grid.mass_matrix();
-    CsrMatrix transport = grid.transport_matrix();
-    for (size_t i = 0; i < transport.n_nonzeros(); i++)
-    {
-        transport.vals()[i] *= -1;
-    }
+    CsrMatrix transport = grid.block_transport_matrix();
     // upwind coupling
     for (int ielem = 0; ielem < grid.n_elements(); ielem++)
     {
@@ -202,7 +194,7 @@ TEST_CASE("Inviscid Burgers equation, implicit, iterflux", "[Burgers-inviscid-im
     VesselGraph gr1(node, ed);
     GraphGrid grid1(gr1, 0.1);
     std::vector<Point2> nodes_coo = generate_nodes_coo(gr1);
-    FemGrid grid(grid1, nodes_coo);
+    FemGrid grid(grid1);
     double tau = grid.h() / 5;
 
     CsrMatrix mass = grid.mass_matrix();
@@ -341,16 +333,12 @@ TEST_CASE("Inviscid Burgers equation, cn", "[Burgers-inviscid-cn][amg]")
     VesselGraph gr1(node, ed);
     GraphGrid grid1(gr1, 0.1);
     std::vector<Point2> nodes_coo = generate_nodes_coo(gr1);
-    FemGrid grid(grid1, nodes_coo);
+    FemGrid grid(grid1);
     double tau = grid.h() / 2;
     double theta = 0.5;
 
     CsrMatrix mass = grid.mass_matrix();
-    CsrMatrix transport = grid.transport_matrix();
-    for (size_t i = 0; i < transport.n_nonzeros(); i++)
-    {
-        transport.vals()[i] *= -1;
-    }
+    CsrMatrix transport = grid.block_transport_matrix();
     // upwind coupling
     for (int ielem = 0; ielem < grid.n_elements(); ielem++)
     {

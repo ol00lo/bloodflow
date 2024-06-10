@@ -22,11 +22,11 @@ TEST_CASE("Single vessel, inviscid", "[single-vessel-inviscid-explicit]")
     std::vector<double> ed = {data.L};
     VesselGraph gr1(node, ed);
     GraphGrid grid1(gr1, 0.01, 1);
-    std::vector<Point2> nodes_coo = generate_nodes_coo(gr1);
-    FemGrid grid(grid1, nodes_coo);
+    FemGrid grid(grid1);
     double tau = grid.h() / 100;
     std::vector<ElementBoundaryFluxes> upwind_fluxes(grid.n_elements());
 
+    std::vector<Point2> nodes_coo = generate_nodes_coo(gr1);
     NonstatGridSaver saver(grid1, nodes_coo, "bububu");
     saver.new_time_step(0);
 
@@ -46,7 +46,7 @@ TEST_CASE("Single vessel, inviscid", "[single-vessel-inviscid-explicit]")
     upwind_flux_calculator.back().reset(new OutflowFluxCalculator(grid, data, grid.n_elements() - 1));
     // prepare matrix solver
     CsrMatrix mass = grid.mass_matrix();
-    CsrMatrix tran = grid.transport_matrix();
+    CsrMatrix tran = grid.block_transport_matrix();
     AmgcMatrixSolver slv;
     slv.set_matrix(mass);
 
@@ -81,8 +81,8 @@ TEST_CASE("Single vessel, inviscid", "[single-vessel-inviscid-explicit]")
         std::vector<double> tran_u = tran.mult_vec(flux_u);
         for (size_t i = 0; i < grid.n_nodes(); ++i)
         {
-            rhs_a[i] += tau * tran_a[i];
-            rhs_u[i] += tau * tran_u[i];
+            rhs_a[i] -= tau * tran_a[i];
+            rhs_u[i] -= tau * tran_u[i];
         }
         // + coupling
         for (size_t ielem = 0; ielem < grid.n_elements(); ++ielem)

@@ -4,7 +4,7 @@ using namespace bflow;
 AssemblerFlux::AssemblerFlux(const FemGrid& grid, const ProblemData& data) : _grid(grid), _data(data)
 {
     _mass = _grid.mass_matrix();
-    _tran = _grid.transport_matrix();
+    _tran = _grid.block_transport_matrix();
 
     _upwind_flux_calculator.resize(grid.n_points());
     _upwind_flux_calculator[0].reset(new InflowQFluxCalculator(
@@ -63,8 +63,6 @@ std::vector<double> AssemblerFlux::dfa_dx() const
 {
     // nodewise flux
     std::vector<double> ret = _tran.mult_vec(_flux_a);
-    for (auto& v : ret)
-        v *= -1;
 
     // coupling
     for (size_t ielem = 0; ielem < _grid.n_elements(); ++ielem)
@@ -81,8 +79,6 @@ std::vector<double> AssemblerFlux::dfu_dx() const
 {
     // nodewise flux
     std::vector<double> ret = _tran.mult_vec(_flux_u);
-    for (auto& v : ret)
-        v *= -1;
 
     // coupling
     for (size_t ielem = 0; ielem < _grid.n_elements(); ++ielem)
@@ -109,7 +105,7 @@ CsrMatrix AssemblerFlux::block_u_transport() const
         for (size_t a = ret.addr()[i]; a < ret.addr()[i + 1]; ++a)
         {
             size_t col = ret.cols()[a];
-            ret.vals()[a] *= _u[col];
+            ret.vals()[a] *= -_u[col];
         }
     }
     return ret;
