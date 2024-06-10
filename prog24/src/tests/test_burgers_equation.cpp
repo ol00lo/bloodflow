@@ -27,6 +27,10 @@ TEST_CASE("Inviscid Burgers equation, explicit", "[Burgers-inviscid-explicit]")
 
     CsrMatrix mass = grid.mass_matrix();
     CsrMatrix transport = grid.transport_matrix();
+    for (size_t i = 0; i < transport.n_nonzeros(); i++)
+    {
+        transport.vals()[i] *= -1;
+    }
     // upwind coupling
     for (int ielem = 0; ielem < grid.n_elements(); ielem++)
     {
@@ -100,6 +104,10 @@ TEST_CASE("Inviscid Burgers equation, implicit", "[Burgers-inviscid-implicit][am
 
     CsrMatrix mass = grid.mass_matrix();
     CsrMatrix transport = grid.transport_matrix();
+    for (size_t i = 0; i < transport.n_nonzeros(); i++)
+    {
+        transport.vals()[i] *= -1;
+    }
     // upwind coupling
     for (int ielem = 0; ielem < grid.n_elements(); ielem++)
     {
@@ -339,6 +347,10 @@ TEST_CASE("Inviscid Burgers equation, cn", "[Burgers-inviscid-cn][amg]")
 
     CsrMatrix mass = grid.mass_matrix();
     CsrMatrix transport = grid.transport_matrix();
+    for (size_t i = 0; i < transport.n_nonzeros(); i++)
+    {
+        transport.vals()[i] *= -1;
+    }
     // upwind coupling
     for (int ielem = 0; ielem < grid.n_elements(); ielem++)
     {

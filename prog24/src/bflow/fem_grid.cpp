@@ -116,7 +116,7 @@ CsrMatrix FemGrid::transport_matrix() const
             {
                 double v = local[irow * n_local_bases() + icol];
                 size_t iaddr = ret.find_index(lg[irow], lg[icol]);
-                ret.vals()[iaddr] -= v;
+                ret.vals()[iaddr] += v;
             }
     }
     return ret;

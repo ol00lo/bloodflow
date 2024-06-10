@@ -76,6 +76,10 @@ TEST_CASE("Transport equation, upwind", "[upwind-transport]")
 
     CsrMatrix mass = grid.mass_matrix();
     CsrMatrix transport = grid.transport_matrix();
+    for (size_t i = 0; i < transport.n_nonzeros(); i++)
+    {
+        transport.vals()[i] *= -1;
+    }
     // upwind coupling
     for (size_t ielem = 0; ielem < grid.n_elements(); ielem++)
     {

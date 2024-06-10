@@ -24,7 +24,6 @@ TEST_CASE("Single vessel, inviscid", "[single-vessel-inviscid-explicit]")
     GraphGrid grid1(gr1, 0.01, 1);
     std::vector<Point2> nodes_coo = generate_nodes_coo(gr1);
     FemGrid grid(grid1, nodes_coo);
-    //FemGrid grid(data.L, 100, 1);
     double tau = grid.h() / 100;
     std::vector<ElementBoundaryFluxes> upwind_fluxes(grid.n_elements());
 
@@ -39,8 +38,7 @@ TEST_CASE("Single vessel, inviscid", "[single-vessel-inviscid-explicit]")
     saver.save_vtk_point_data(pressure, "pressure");
 
     std::vector<std::shared_ptr<IUpwindFluxCalculator>> upwind_flux_calculator(grid.n_points());
-    upwind_flux_calculator[0].reset(new InflowQFluxCalculator(
-        grid, data, [&time]() { return time; }, 0));
+    upwind_flux_calculator[0].reset(new InflowQFluxCalculator(grid, data, [&time]() { return time; }, 0));
     for (size_t i = 1; i < grid.n_points() - 1; ++i)
     {
             upwind_flux_calculator[i].reset(new InternalFluxCalculator(grid, data, i - 1, i));
@@ -57,7 +55,7 @@ TEST_CASE("Single vessel, inviscid", "[single-vessel-inviscid-explicit]")
     {
         time += tau;
         std::cout << "TIME=" << time;
-        //std::cout << "  Q=" << data.q_inflow(time) << std::endl;
+        std::cout << "  Q=" << data.q_inflow(time) << std::endl;
 
         // nodewise fluxes
         std::vector<double> flux_a(grid.n_nodes());
@@ -83,8 +81,8 @@ TEST_CASE("Single vessel, inviscid", "[single-vessel-inviscid-explicit]")
         std::vector<double> tran_u = tran.mult_vec(flux_u);
         for (size_t i = 0; i < grid.n_nodes(); ++i)
         {
-            rhs_a[i] -= tau * tran_a[i];
-            rhs_u[i] -= tau * tran_u[i];
+            rhs_a[i] += tau * tran_a[i];
+            rhs_u[i] += tau * tran_u[i];
         }
         // + coupling
         for (size_t ielem = 0; ielem < grid.n_elements(); ++ielem)
@@ -104,6 +102,7 @@ TEST_CASE("Single vessel, inviscid", "[single-vessel-inviscid-explicit]")
         {
             pressure[i] = data.pressure(area[i]);
         }
+        t += tau;
         if (t - 1e-5< time )
         {
             saver.new_time_step(time);

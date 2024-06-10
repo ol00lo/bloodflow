@@ -1,25 +1,26 @@
+#include "bflow/assembler_flux.hpp"
+#include "bflow/fem_grid.hpp"
+#include "bflow/flux_calculator.hpp"
 #include "bflow/macros.hpp"
 #include "bflow/matrix.hpp"
 #include "bflow/matrix_solver.hpp"
 #include "bflow/time_series_writer.hpp"
-#include "bflow/flux_calculator.hpp"
-#include "bflow/fem_grid.hpp"
-#include "bflow/assembler_flux.hpp"
-#include "catch.hpp"
 #include "bflow/vtk.hpp"
+#include "catch.hpp"
 #include <fstream>
 using namespace bflow;
 
-TEST_CASE("Single vessel, inviscid2, ver1", "[single-vessel-inviscid-explicit1]"){
+TEST_CASE("Single vessel, inviscid2, ver1", "[single-vessel-inviscid-explicit1]")
+{
     ProblemData data;
     double time = 0;
     std::vector<std::vector<int>> node = {{0}, {0}};
     std::vector<double> ed = {data.L};
     VesselGraph gr1(node, ed);
-    GraphGrid grid1(gr1, data.L/100);
+    GraphGrid grid1(gr1, data.L/100, 1);
     std::vector<Point2> nodes_coo = generate_nodes_coo(gr1);
     FemGrid grid(grid1, nodes_coo);
-    double tau = grid.h()/100;
+    double tau = grid.h() / 100;
     std::vector<ElementBoundaryFluxes> upwind_fluxes(grid.n_elements());
 
     NonstatGridSaver saver(grid1, nodes_coo, "bebe");
@@ -33,19 +34,21 @@ TEST_CASE("Single vessel, inviscid2, ver1", "[single-vessel-inviscid-explicit1]"
     saver.save_vtk_point_data(pressure, "pressure");
 
     std::vector<std::shared_ptr<IUpwindFluxCalculator>> upwind_flux_calculator(grid.n_points());
-    upwind_flux_calculator[0].reset(new InflowQFluxCalculator(grid, data, [&time](){ return time; }, 0));
-    for (size_t i=1; i<grid.n_points()-1; ++i){
-        upwind_flux_calculator[i].reset(new InternalFluxCalculator(grid, data, i-1, i));
+    upwind_flux_calculator[0].reset(new InflowQFluxCalculator(grid, data, [&time]() { return time; }, 0));
+    for (size_t i = 1; i < grid.n_points() - 1; ++i)
+    {
+        upwind_flux_calculator[i].reset(new InternalFluxCalculator(grid, data, i - 1, i));
     }
-    upwind_flux_calculator.back().reset(new OutflowFluxCalculator(grid, data, grid.n_elements()-1));
+    upwind_flux_calculator.back().reset(new OutflowFluxCalculator(grid, data, grid.n_elements() - 1));
 
     // prepare matrix solver
     CsrMatrix mass = grid.mass_matrix();
     CsrMatrix tran = grid.transport_matrix();
     AmgcMatrixSolver slv;
     slv.set_matrix(mass);
-    
-    while (time < 0.2 - 1e-6){
+    double t = 0;
+    while (time < 0.2 - 1e-6)
+    {
         time += tau;
         std::cout << "TIME=" << time;
         std::cout << "  Q=" << data.q_inflow(time) << std::endl;
@@ -53,13 +56,15 @@ TEST_CASE("Single vessel, inviscid2, ver1", "[single-vessel-inviscid-explicit1]"
         // nodewise fluxes
         std::vector<double> flux_a(grid.n_nodes());
         std::vector<double> flux_u(grid.n_nodes());
-        for (size_t i=0; i<grid.n_nodes(); ++i){
+        for (size_t i = 0; i < grid.n_nodes(); ++i)
+        {
             flux_a[i] = data.flux_a(area[i], velocity[i]);
             flux_u[i] = data.flux_u(area[i], velocity[i]);
         }
 
         // upwind fluxes
-        for (auto c: upwind_flux_calculator){
+        for (auto c : upwind_flux_calculator)
+        {
             c->compute(area, velocity, upwind_fluxes);
         }
 
@@ -70,37 +75,46 @@ TEST_CASE("Single vessel, inviscid2, ver1", "[single-vessel-inviscid-explicit1]"
         // +tau*T
         std::vector<double> tran_a = tran.mult_vec(flux_a);
         std::vector<double> tran_u = tran.mult_vec(flux_u);
-        for (size_t i=0; i<grid.n_nodes(); ++i){
+        for (size_t i = 0; i < grid.n_nodes(); ++i)
+        {
             rhs_a[i] += tau * tran_a[i];
             rhs_u[i] += tau * tran_u[i];
         }
         // + coupling
-        for (size_t ielem=0; ielem<grid.n_elements(); ++ielem){
+        for (size_t ielem = 0; ielem < grid.n_elements(); ++ielem)
+        {
             size_t node0 = grid.tab_elem_nodes(ielem)[0];
             size_t node1 = grid.tab_elem_nodes(ielem)[1];
-            rhs_a[node0] += tau*upwind_fluxes[ielem].a_x0;
-            rhs_a[node1] -= tau*upwind_fluxes[ielem].a_x1;
-            rhs_u[node0] += tau*upwind_fluxes[ielem].u_x0;
-            rhs_u[node1] -= tau*upwind_fluxes[ielem].u_x1;
+            rhs_a[node0] += tau * upwind_fluxes[ielem].a_x0;
+            rhs_a[node1] -= tau * upwind_fluxes[ielem].a_x1;
+            rhs_u[node0] += tau * upwind_fluxes[ielem].u_x0;
+            rhs_u[node1] -= tau * upwind_fluxes[ielem].u_x1;
         }
-        //solve
+        // solve
         slv.solve(rhs_a, area);
         slv.solve(rhs_u, velocity);
 
-        for (size_t i=0; i<grid.n_nodes(); ++i){
+        for (size_t i = 0; i < grid.n_nodes(); ++i)
+        {
             pressure[i] = data.pressure(area[i]);
         }
-        saver.new_time_step(time);
-        saver.save_vtk_point_data(area, "area");
-        saver.save_vtk_point_data(velocity, "velocity");
-        saver.save_vtk_point_data(pressure, "pressure");
+        t += tau;
+        if (t > 0.005-1e-6)
+        {
+            t = 0;
+            saver.new_time_step(time);
+            saver.save_vtk_point_data(area, "area");
+            saver.save_vtk_point_data(velocity, "velocity");
+            saver.save_vtk_point_data(pressure, "pressure");
+        }
     }
 
     double maxp = *std::max_element(pressure.begin(), pressure.end());
     CHECK(maxp == Approx(24.3958).margin(1e-3));
 }
 
-TEST_CASE("Single vessel, inviscid, ver2", "[single-vessel-inviscid-explicit2]"){
+TEST_CASE("Single vessel, inviscid, ver2", "[single-vessel-inviscid-explicit2]")
+{
     ProblemData data;
     data.L = 1;
     data.recompute();
@@ -112,7 +126,7 @@ TEST_CASE("Single vessel, inviscid, ver2", "[single-vessel-inviscid-explicit2]")
     GraphGrid grid1(gr1, data.L / 100);
     std::vector<Point2> nodes_coo = generate_nodes_coo(gr1);
     FemGrid grid(grid1, nodes_coo);
-    double tau = grid.h()/100;
+    double tau = grid.h() / 100;
 
     NonstatGridSaver saver(grid1, nodes_coo, "bebe");
 
@@ -129,85 +143,97 @@ TEST_CASE("Single vessel, inviscid, ver2", "[single-vessel-inviscid-explicit2]")
     // prepare matrix solver
     AmgcMatrixSolver slv;
     slv.set_matrix(assem.mass());
-    
-    while (time < 0.2 - 1e-6){
+    double t = 0;
+    while (time < 0.2 - 1e-6)
+    {
         assem.actualize_fluxes(time, area, velocity);
-        std::vector<double> dfadx = assem.dfa_dx(); 
+        std::vector<double> dfadx = assem.dfa_dx();
         std::vector<double> dfudx = assem.dfu_dx();
         std::vector<double> visc_term = assem.viscous_term();
 
         time += tau;
         std::cout << "TIME=" << time;
         std::cout << "  Q=" << data.q_inflow(time) << std::endl;
-        
+
         // rhs_a  = A
         std::vector<double> rhs_a = assem.mass().mult_vec(area);
         //           - tau*(1-theta)*d(uA)/dx
-        for (size_t i=0; i<rhs_a.size(); ++i){
-            rhs_a[i] -= tau*dfadx[i];
+        for (size_t i = 0; i < rhs_a.size(); ++i)
+        {
+            rhs_a[i] -= tau * dfadx[i];
         }
 
         // rhs1_u = u
         std::vector<double> rhs_u = assem.mass().mult_vec(velocity);
         //          -tau*(1-theta)d(Pt)/dx
-        for (size_t i=0; i<rhs_u.size(); ++i){
-            rhs_u[i] -= tau*dfudx[i];
+        for (size_t i = 0; i < rhs_u.size(); ++i)
+        {
+            rhs_u[i] -= tau * dfudx[i];
         }
         //          +tau*(1-theta)*kr*u/a
-        for (size_t i=0; i<rhs_u.size(); ++i){
-            rhs_u[i] += tau*visc_term[i];
+        for (size_t i = 0; i < rhs_u.size(); ++i)
+        {
+            rhs_u[i] += tau * visc_term[i];
         }
 
         slv.solve(rhs_a, area);
         slv.solve(rhs_u, velocity);
 
-        for (size_t i=0; i<grid.n_nodes(); ++i){
+        for (size_t i = 0; i < grid.n_nodes(); ++i)
+        {
             pressure[i] = data.pressure(area[i]);
         }
-        saver.new_time_step(time);
-        saver.save_vtk_point_data(area, "area");
-        saver.save_vtk_point_data(velocity, "velocity");
-        saver.save_vtk_point_data(pressure, "pressure");
+        t += tau;
+        if (t > 0.005 - 1e-6)
+        {
+            t = 0;
+            saver.new_time_step(time);
+            saver.save_vtk_point_data(area, "area");
+            saver.save_vtk_point_data(velocity, "velocity");
+            saver.save_vtk_point_data(pressure, "pressure");
+        }
     }
 
     double maxp = *std::max_element(pressure.begin(), pressure.end());
     CHECK(maxp == Approx(24.3632).margin(1e-3));
 }
 
-TEST_CASE("Single vessel, inviscid, implicit", "[single-vessel-inviscid-implicit]"){
+TEST_CASE("Single vessel, inviscid, implicit", "[single-vessel-inviscid-implicit]")
+{
     ProblemData data;
     data.L = 1;
     data.recompute();
     double time = 0;
-
     std::vector<std::vector<int>> node = {{0}, {0}};
     std::vector<double> ed = {data.L};
     VesselGraph gr1(node, ed);
     GraphGrid grid1(gr1, data.L / 100);
     std::vector<Point2> nodes_coo = generate_nodes_coo(gr1);
     FemGrid grid(grid1, nodes_coo);
-    double tau = grid.h()/100;
-
-    
-    NonstatGridSaver saver(grid1, nodes_coo, "bebe");
+    double tau = grid.h() / 100;
 
     std::vector<double> velocity(grid.n_nodes(), 0.0);
     std::vector<double> area(grid.n_nodes(), data.area0);
     std::vector<double> pressure(grid.n_nodes(), 0.0);
-    for (size_t i=0; i<grid.n_nodes(); ++i){
+    for (size_t i = 0; i < grid.n_nodes(); ++i)
+    {
         pressure[i] = data.pressure(area[i]);
     }
+
+    AssemblerFlux assem(grid, data);
+
+    AmgcMatrixSolver slv;
+
+    NonstatGridSaver saver(grid1, nodes_coo, "bebe");
     saver.new_time_step(0);
     saver.save_vtk_point_data(area, "area");
     saver.save_vtk_point_data(velocity, "velocity");
     saver.save_vtk_point_data(pressure, "pressure");
-    AssemblerFlux assem(grid, data);
 
-    AmgcMatrixSolver slv;
-    
     size_t iter_max = 1;
-
-    while (time < 0.2 - 1e-6){
+    double t = 0.0;
+    while (time < 0.2 - 1e-6)
+    {
         // assemble right hand side
         std::vector<double> rhs1_a = assem.mass().mult_vec(area);
         std::vector<double> rhs1_u = assem.mass().mult_vec(velocity);
@@ -219,24 +245,28 @@ TEST_CASE("Single vessel, inviscid, implicit", "[single-vessel-inviscid-implicit
         double err_a = 1e6;
         double err_u = 1e6;
 
-        for (size_t it=0; it < iter_max; ++it){
+        for (size_t it = 0; it < iter_max; ++it)
+        {
             // 1. --- Area equation
             assem.actualize_fluxes(time, area, velocity);
             // 1.1 LHS
             CsrMatrix lhs_a = assem.mass();
             CsrMatrix block_u_transport = assem.block_u_transport();
-            for (size_t i=0; i<lhs_a.n_nonzeros(); ++i){
+            for (size_t i = 0; i < lhs_a.n_nonzeros(); ++i)
+            {
                 lhs_a.vals()[i] -= tau * block_u_transport.vals()[i];
             }
             // 1.2 RHS
             std::vector<double> rhs_a(rhs1_a);
             // coupling flux
             std::vector<double> coupling_flux_ua = assem.coupling_flux_ua();
-            for (size_t i=0; i<rhs_a.size(); ++i){
-                rhs_a[i] -= tau*coupling_flux_ua[i];
+            for (size_t i = 0; i < rhs_a.size(); ++i)
+            {
+                rhs_a[i] -= tau * coupling_flux_ua[i];
             }
             // 1.3 residual
-            if (it > 0){
+            if (it > 0)
+            {
                 err_a = assem.compute_residual(lhs_a, rhs_a, area);
             }
 
@@ -249,7 +279,8 @@ TEST_CASE("Single vessel, inviscid, implicit", "[single-vessel-inviscid-implicit
             // 2.1 LHS
             CsrMatrix lhs_u = assem.mass();
             block_u_transport = assem.block_u_transport();
-            for (size_t i=0; i<lhs_u.n_nonzeros(); ++i){
+            for (size_t i = 0; i < lhs_u.n_nonzeros(); ++i)
+            {
                 lhs_u.vals()[i] -= 0.5 * tau * block_u_transport.vals()[i];
             }
             // 2.2 RHS
@@ -257,21 +288,25 @@ TEST_CASE("Single vessel, inviscid, implicit", "[single-vessel-inviscid-implicit
             // coupling flux
             std::vector<double> coupling_flux_u2 = assem.coupling_flux_u2();
             std::vector<double> coupling_flux_p = assem.coupling_flux_p();
-            for (size_t i=0; i<rhs_a.size(); ++i){
-                rhs_u[i] -= tau*(0.5*coupling_flux_u2[i] + coupling_flux_p[i]/data.rho);
+            for (size_t i = 0; i < rhs_a.size(); ++i)
+            {
+                rhs_u[i] -= tau * (0.5 * coupling_flux_u2[i] + coupling_flux_p[i] / data.rho);
             }
-            // block p 
+            // block p
             std::vector<double> p(grid.n_nodes());
-            for (size_t i=0; i<grid.n_nodes(); ++i){
+            for (size_t i = 0; i < grid.n_nodes(); ++i)
+            {
                 p[i] = data.pressure(area[i]);
             }
             p = assem.block_transport().mult_vec(p);
-            for (size_t i=0; i<rhs_a.size(); ++i){
+            for (size_t i = 0; i < rhs_a.size(); ++i)
+            {
                 rhs_u[i] += tau * p[i] / data.rho;
             }
 
             // 2.3 residual
-            if (it > 0){
+            if (it > 0)
+            {
                 err_u = assem.compute_residual(lhs_u, rhs_u, velocity);
             }
             // 2.4 Solve
@@ -279,25 +314,37 @@ TEST_CASE("Single vessel, inviscid, implicit", "[single-vessel-inviscid-implicit
             slv.solve(rhs_u, velocity);
 
             // break conditions
-            if (it > 0){
+            if (it > 0)
+            {
                 std::cout << err_u << " " << err_a << std::endl;
-                if (std::max(err_u, err_a) < 1e-10){
+                if (std::max(err_u, err_a) < 1e-12)
+                {
                     std::cout << "converged in " << it << " iterations" << std::endl;
                     break;
-                } else if (it == iter_max - 1){
-                    std::cout << "Warning: internal iterations did not converge: " << err_u << ", " << err_a << std::endl;
+                }
+                else if (it == iter_max - 1)
+                {
+                    std::cout << "Warning: internal iterations did not converge: " << err_u << ", " << err_a
+                              << std::endl;
                 }
             }
         }
 
-        for (size_t i=0; i<grid.n_nodes(); ++i){
+        for (size_t i = 0; i < grid.n_nodes(); ++i)
+        {
             pressure[i] = data.pressure(area[i]);
         }
-        saver.new_time_step(time);
-        saver.save_vtk_point_data(area, "area");
-        saver.save_vtk_point_data(velocity, "velocity");
-        saver.save_vtk_point_data(pressure, "pressure");
+        t += tau;
+        if (t>0.005-1e-6)
+        {
+            t = 0;
+            saver.new_time_step(0);
+            saver.save_vtk_point_data(area, "area");
+            saver.save_vtk_point_data(velocity, "velocity");
+            saver.save_vtk_point_data(pressure, "pressure");
+        }
     }
+
     double maxp = *std::max_element(pressure.begin(), pressure.end());
     CHECK(maxp == Approx(24.3632).margin(1e-3));
 }
