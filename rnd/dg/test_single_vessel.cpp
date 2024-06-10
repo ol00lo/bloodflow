@@ -370,20 +370,19 @@ private:
 	double _a;
 };
 
-class InflowPW2FluxCalculator: public IUpwindFluxCalculator{
+class InflowPFluxCalculator_NonReflecting: public IUpwindFluxCalculator{
 public:
-	InflowPW2FluxCalculator(const FemGrid& grid, const ProblemData& data, std::function<double()> getp, std::function<double()> getw2, size_t cell):
+	InflowPFluxCalculator_NonReflecting(const FemGrid& grid, const ProblemData& data, std::function<double()> getp, size_t cell):
 		_data(data),
 		_getp(getp),
-		_getw2(getw2),
-		_cell_right(cell)
+		_cell_right(cell),
+		_node_right(grid.tab_elem_nodes(cell)[0])
 	{
 	}
 
 	void compute(const std::vector<double>& area, const std::vector<double>& velocity, std::vector<ElementBoundaryFluxes>& fluxes) override{
 		double p = _getp();
 		//double w2_upw = _getw2();
-		size_t _node_right = 0;
 		double w2_upw = _data.w2(area[_node_right], velocity[_node_right]);
 		double a = (p / _data.beta + sqrt(_data.area0));
 		a = a*a;
@@ -395,19 +394,12 @@ public:
 
 		fluxes[_cell_right].upwind_area_x0 = area_upw;
 		fluxes[_cell_right].upwind_velo_x0 = velo_upw;
-
-		//double area_upw = (p / _data.beta + sqrt(_data.area0));
-		//area_upw = area_upw*area_upw;
-		//double velo_upw = w2 + 4 * sqrt(_data.beta/2/_data.rho)*(sqrt(sqrt(area_upw)) - sqrt(sqrt(_data.area0)));
-
-		//fluxes[_cell_right].upwind_area_x0 = area_upw;
-		//fluxes[_cell_right].upwind_velo_x0 = velo_upw;
 	}
 private:
 	const ProblemData& _data;
 	std::function<double()> _getp;
-	std::function<double()> _getw2;
 	const size_t _cell_right;
+	const size_t _node_right;
 };
 
 class InflowPFluxCalculator: public IUpwindFluxCalculator{
@@ -1417,7 +1409,6 @@ TEST_CASE("Single vessel, different beta properties", "[2props-vessel]"){
 	size_t monitoring_node2 = grid.closest_node(0.5 * L);
 	size_t monitoring_node3 = grid.closest_node(0.75 * L);
 	std::vector<double> monitor1, monitor2, monitor3;
-	double inflow_w2 = 0;
 
 	std::vector<const ProblemData*> data(grid.n_elements());
 	for (size_t icell=0; icell<grid.n_elements(); ++icell){
@@ -1426,9 +1417,8 @@ TEST_CASE("Single vessel, different beta properties", "[2props-vessel]"){
 
 	std::vector<std::shared_ptr<IUpwindFluxCalculator>> flux_calculators(grid.n_points());
 	flux_calculators[0].reset(
-		new InflowPW2FluxCalculator(grid, data1,
+		new InflowPFluxCalculator_NonReflecting(grid, data1,
 			[&time](){ return p_inflow2(time); },
-			[&inflow_w2](){ return inflow_w2; },
 			0));
 	for (size_t i=1; i<grid.n_points()-1; ++i){
 		size_t cell_left = i-1;
@@ -1467,14 +1457,8 @@ TEST_CASE("Single vessel, different beta properties", "[2props-vessel]"){
 
 	//while (time < 0.25 - 1e-12){
 	while (time < 0.05 - 1e-12){
-		assem.actualize_fluxes(time, area, velocity);
-
-		// inflow bc
-		double inflow_c = sqrt(data1.beta/2/data1.rho * sqrt(area[0]));
-		double inflow_lambda2 = velocity[0] - inflow_c;
-		inflow_w2 = grid.elem_interpolate(0, -inflow_lambda2 * tau , assem.w2());
-
 		// assemble right hand side
+		assem.actualize_fluxes(time, area, velocity);
 		block_u_transport = assem.block_u_transport();
 		// 1. ---- Area equation
 		std::vector<double> rhs1_a = assem.mass().mult_vec(area);
