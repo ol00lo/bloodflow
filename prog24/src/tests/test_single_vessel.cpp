@@ -8,7 +8,30 @@
 #include "bflow/vtk.hpp"
 #include "catch.hpp"
 #include <fstream>
+#include <iomanip>
 using namespace bflow;
+
+namespace
+{
+void print_matrix_full(const CsrMatrix& mat, std::ostream& s = std::cout)
+{
+    for (size_t i = 0; i < mat.n_rows(); i++)
+    {
+        for (size_t j = 0; j < mat.n_rows(); j++)
+        {
+            if (mat.is_in_stencil(i, j) == false)
+            {
+                s << std::setw(6) << "*";
+            }
+            else
+            {
+                s << std::setw(6) << round(mat.value(i, j) * 1000) / 1000;
+            }
+        }
+        s << std::endl;
+    }
+}
+}
 
 TEST_CASE("Single vessel, inviscid2, ver1", "[single-vessel-inviscid-explicit1]")
 {
@@ -207,7 +230,7 @@ TEST_CASE("Single vessel, inviscid, implicit", "[single-vessel-inviscid-implicit
     std::vector<std::vector<int>> node = {{0}, {0}};
     std::vector<double> ed = {data.L};
     VesselGraph gr1(node, ed);
-    GraphGrid grid1(gr1, data.L / 100);
+    GraphGrid grid1(gr1, data.L / 100, 1);
     std::vector<Point2> nodes_coo = generate_nodes_coo(gr1);
     FemGrid grid(grid1, nodes_coo);
     double tau = grid.h() / 100;
@@ -221,7 +244,6 @@ TEST_CASE("Single vessel, inviscid, implicit", "[single-vessel-inviscid-implicit
     }
 
     AssemblerFlux assem(grid, data);
-
     AmgcMatrixSolver slv;
 
     NonstatGridSaver saver(grid1, nodes_coo, "bebe");
@@ -269,13 +291,13 @@ TEST_CASE("Single vessel, inviscid, implicit", "[single-vessel-inviscid-implicit
             {
                 err_a = assem.compute_residual(lhs_a, rhs_a, area);
             }
-
+            std::cout << std::endl;
             // 1.4 Solve
             slv.set_matrix(lhs_a);
             slv.solve(rhs_a, area);
-
             // 2. ---- Velocity equation
             assem.actualize_fluxes(time, area, velocity);
+
             // 2.1 LHS
             CsrMatrix lhs_u = assem.mass();
             block_u_transport = assem.block_u_transport();
@@ -283,6 +305,7 @@ TEST_CASE("Single vessel, inviscid, implicit", "[single-vessel-inviscid-implicit
             {
                 lhs_u.vals()[i] -= 0.5 * tau * block_u_transport.vals()[i];
             }
+
             // 2.2 RHS
             std::vector<double> rhs_u(rhs1_u);
             // coupling flux
@@ -305,14 +328,16 @@ TEST_CASE("Single vessel, inviscid, implicit", "[single-vessel-inviscid-implicit
             }
 
             // 2.3 residual
+
             if (it > 0)
             {
                 err_u = assem.compute_residual(lhs_u, rhs_u, velocity);
             }
+
             // 2.4 Solve
             slv.set_matrix(lhs_u);
-            slv.solve(rhs_u, velocity);
 
+            slv.solve(rhs_u, velocity);
             // break conditions
             if (it > 0)
             {
@@ -338,7 +363,7 @@ TEST_CASE("Single vessel, inviscid, implicit", "[single-vessel-inviscid-implicit
         if (t>0.005-1e-6)
         {
             t = 0;
-            saver.new_time_step(0);
+            saver.new_time_step(time);
             saver.save_vtk_point_data(area, "area");
             saver.save_vtk_point_data(velocity, "velocity");
             saver.save_vtk_point_data(pressure, "pressure");

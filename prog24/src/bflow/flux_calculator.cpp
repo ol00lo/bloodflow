@@ -73,8 +73,8 @@ void InflowQFluxCalculator::compute(const std::vector<double>& area, const std::
     fluxes[_cell_right].a_x0 = fa;
     fluxes[_cell_right].u_x0 = fu;
 
-    //fluxes[_cell_right].upwind_area_x0 = area_upw;
-    //fluxes[_cell_right].upwind_velo_x0 = velo_upw;
+    fluxes[_cell_right].upwind_area_x0 = area_upw;
+    fluxes[_cell_right].upwind_velo_x0 = velo_upw;
 
     _a = area_upw;
 }
@@ -139,10 +139,10 @@ void InternalFluxCalculator::compute(const std::vector<double>& area, const std:
     fluxes[_cell_right].u_x0 = fu;
 
     
-    //fluxes[_cell_right].upwind_area_x0 = area_upw;
-    //fluxes[_cell_right].upwind_velo_x0 = velo_upw;
-    //fluxes[_cell_left].upwind_area_x1 = area_upw;
-    //fluxes[_cell_left].upwind_velo_x1 = velo_upw;
+    fluxes[_cell_right].upwind_area_x0 = area_upw;
+    fluxes[_cell_right].upwind_velo_x0 = velo_upw;
+    fluxes[_cell_left].upwind_area_x1 = area_upw;
+    fluxes[_cell_left].upwind_velo_x1 = velo_upw;
 }
 
 MergingFluxCalculator::MergingFluxCalculator(const FemGrid& grid, const ProblemData& datal, const ProblemData& datar,
