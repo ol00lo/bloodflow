@@ -39,7 +39,10 @@ int CsrMatrix::n_nonzeros() const
 {
     return _cols.size();
 }
-
+std::vector<double>& CsrMatrix::vals()
+{
+    return _vals;
+}
 const std::vector<double>& CsrMatrix::vals() const
 {
     return _vals;
@@ -68,6 +71,71 @@ int CsrMatrix::find_index(int i, int j) const
         }
     }
     return INVALID_INDEX;
+}
+void CsrMatrix::set_unit_row(size_t irow)
+{
+    const std::vector<int>& a = addr();
+    const std::vector<int>& c = cols();
+
+    int start = a.at(irow);
+    int end = a.at(irow + 1);
+    for (int i = start; i < end; ++i)
+    {
+        _vals[i] = (c[i] == irow) ? 1.0 : 0.0;
+    }
+}
+
+void CsrMatrix::set_stencil(const std::vector<std::set<int>>& stencil_set)
+{
+    _addr = std::vector<int>(1, 0);
+    _cols.clear();
+    for (int irow = 0; irow < stencil_set.size(); ++irow)
+    {
+        const std::set<int>& cols = stencil_set[irow];
+        _addr.push_back(_addr.back() + cols.size());
+        for (int col : cols)
+        {
+            _cols.push_back(col);
+            _vals.push_back(0);
+        }
+    }
+}
+
+std::vector<double> CsrMatrix::mult_vec(const std::vector<double>& u) const
+{
+    const std::vector<int>& a = addr();
+    const std::vector<int>& c = cols();
+    const std::vector<double>& v = vals();
+
+    std::vector<double> ret(n_rows(), 0);
+    for (size_t irow = 0; irow < n_rows(); ++irow)
+    {
+        size_t start = a[irow];
+        size_t end = a[irow + 1];
+        for (size_t i = start; i < end; ++i)
+        {
+            ret[irow] += v[i] * u[c[i]];
+        }
+    }
+
+    return ret;
+}
+
+double CsrMatrix::mult_vec(int irow, const std::vector<double>& u) const
+{
+    const std::vector<int>& a = addr();
+    const std::vector<int>& c = cols();
+    const std::vector<double>& v = vals();
+
+    double ret = 0;
+    size_t start = a[irow];
+    size_t end = a[irow + 1];
+    for (size_t i = start; i < end; ++i)
+    {
+        ret += v[i] * u[c[i]];
+    }
+
+    return ret;
 }
 
 void LodMatrix::set_value(int i, int j, double val)
