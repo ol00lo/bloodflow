@@ -58,6 +58,7 @@ set (SRC
 	test_single_vessel.cpp
 	test_nonlin_solver.cpp
 	test_burgers_equation.cpp
+	test_bifurcated_vessel.cpp
 )
 
 # build all binaries to build/bin
