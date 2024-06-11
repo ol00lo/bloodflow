@@ -620,27 +620,24 @@ private:
 		};
 		std::array<double, 4> f(double area1, double velo1, double area2, double velo2) const override{
 			return {
-				_fm*(_data1.flux_a(area1, velo1) - _data2.flux_a(area2, velo2)),
-				_fm*(_data1.flux_u(area1, velo1) - _data2.flux_u(area2, velo2)),
+				_data1.flux_a(area1, velo1) - _data2.flux_a(area2, velo2),
+				_data1.flux_u(area1, velo1) - _data2.flux_u(area2, velo2),
 				_data1.w1(area1, velo1) - _w1,
 				_data2.w2(area2, velo2) - _w2
 			};
 		};
 		std::array<double, 16> jac(double area1, double velo1, double area2, double velo2) const override{
-			std::array<double, 16> ret = {
+			return {
 				velo1, area1, -velo2, -area2,
 				0.5*_data1.beta/_data1.rho/sqrt(area1), velo1, -0.5*_data2.beta/_data2.rho/sqrt(area2), -velo2,
 				sqrt(_data1.beta/2/_data1.rho)*std::pow(area1, -0.75), 1, 0, 0,
 				0, 0, -sqrt(_data2.beta/2/_data2.rho)*std::pow(area2, -0.75), 1
 			};
-			for (size_t i=0; i<8; ++i) ret[i] *= _fm;
-			return ret;
 		};
 	private:
 		const ProblemData& _data1;
 		const ProblemData& _data2;
 		double _w1, _w2;
-		static constexpr double _fm = 1;
 	};
 
 	const ProblemData& _data_left;

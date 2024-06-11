@@ -386,7 +386,7 @@ private:
 class Bifurcation3FluxCalculator: public IUpwindFluxCalculator{
 public:
 	Bifurcation3FluxCalculator(
-			const FemGrid& grid, 
+			const FemGrid& grid,
 			const ProblemData& data_left,
 			const ProblemData& data_right1,
 			const ProblemData& data_right2,
@@ -399,7 +399,7 @@ public:
 	  _node2(grid.tab_elem_nodes(elem_right1)[0]),
 	  _node3(grid.tab_elem_nodes(elem_right2)[0]),
 	  _data1(data_left), _data2(data_right1), _data3(data_right2),
-	  _eps(eps)
+	  _eps(eps), _sys(_data1, _data2, _data3)
 	{
 	}
 
@@ -434,11 +434,29 @@ public:
 	}
 public:
 	struct NonlinearSystem: public INonlinearSystem6{
-		std::array<double, 6> f(double x1, double x2, double x3, double x4, double x5, double x6) const override{
-			_THROW_NOT_IMP_;
+
+		NonlinearSystem(const ProblemData& data1, const ProblemData& data2, const ProblemData& data3)
+			:_data1(data1), _data2(data2), _data3(data3){}
+
+		std::array<double, 6> f(double area1, double velo1, double area2, double velo2, double area3, double velo3) const override{
+			return{
+				_data1.flux_a(area1, velo1) - _data2.flux_a(area2, velo2) - _data3.flux_a(area3, velo3),
+				_data1.flux_u(area1, velo1) - _data2.flux_u(area2, velo2),
+				_data1.flux_u(area1, velo1) - _data2.flux_u(area3, velo3),
+				_data1.w1(area1, velo1) - _w1,
+				_data2.w2(area2, velo2) - _w2,
+				_data3.w2(area3, velo3) - _w3
+			};
 		}
-		std::array<double, 36> jac(double x1, double x2, double x3, double x4, double x5, double x6) const override{
-			_THROW_NOT_IMP_;
+		std::array<double, 36> jac(double area1, double velo1, double area2, double velo2, double area3, double velo3) const override{
+			return {
+				velo1, area1, -velo2, -area2, -velo3, -area3,
+				0.5*_data1.beta/_data1.rho/sqrt(area1), velo1, -0.5*_data2.beta/_data2.rho/sqrt(area2), -velo2, 0, 0,
+				0.5*_data1.beta/_data1.rho/sqrt(area1), velo1, 0, 0, -0.5*_data3.beta/_data3.rho/sqrt(area3), -velo3,
+				sqrt(_data1.beta/2/_data1.rho)*std::pow(area1, -0.75), 1, 0, 0, 0, 0,
+				0, 0, -sqrt(_data2.beta/2/_data2.rho)*std::pow(area2, -0.75), 1, 0, 0,
+				0, 0, 0, 0, -sqrt(_data3.beta/2/_data3.rho)*std::pow(area3, -0.75), 1
+			};
 		}
 
 		void set_www(double w1, double w2, double w3){
@@ -447,6 +465,10 @@ public:
 			_w3 = w3;
 		}
 	private:
+		const ProblemData& _data1;
+		const ProblemData& _data2;
+		const ProblemData& _data3;
+
 		double _w1 = 0, _w2 = 0, _w3 = 0;
 	};
 
