@@ -35,12 +35,12 @@ TEST_CASE("Inviscid Burgers equation, explicit", "[Burgers-inviscid-explicit]")
         {
             // left
             size_t iaddr = transport.find_index(lg[0], lg[0] - 1);
-            transport.vals()[iaddr] -= 1;
+            transport.vals()[iaddr] += 1;
         }
         {
             // right
             size_t iaddr = transport.find_index(lg[1], lg[1]);
-            transport.vals()[iaddr] += 1;
+            transport.vals()[iaddr] -= 1;
         }
     }
     CsrMatrix lhs = mass;
@@ -74,7 +74,7 @@ TEST_CASE("Inviscid Burgers equation, explicit", "[Burgers-inviscid-explicit]")
         std::vector<double> rhs = mass.mult_vec(u);
         for (size_t i = 0; i < rhs.size(); ++i)
         {
-            rhs[i] -= tau * fa[i];
+            rhs[i] += tau * fa[i];
         }
 
         // left boundary condition
@@ -108,12 +108,12 @@ TEST_CASE("Inviscid Burgers equation, implicit", "[Burgers-inviscid-implicit][am
         {
             // left
             size_t iaddr = transport.find_index(lg[0], lg[0] - 1);
-            transport.vals()[iaddr] -= 1;
+            transport.vals()[iaddr] += 1;
         }
         {
             // right
             size_t iaddr = transport.find_index(lg[1], lg[1]);
-            transport.vals()[iaddr] += 1;
+            transport.vals()[iaddr] -= 1;
         }
     }
     std::vector<double> load_vector = mass.mult_vec(std::vector<double>(grid.n_nodes(), 1.0));
@@ -149,7 +149,7 @@ TEST_CASE("Inviscid Burgers equation, implicit", "[Burgers-inviscid-implicit][am
                 for (size_t a = lhs.addr()[i]; a < lhs.addr()[i + 1]; ++a)
                 {
                     size_t col = lhs.cols()[a];
-                    lhs.vals()[a] += tau * u[col] / 2 * transport.vals()[a];
+                    lhs.vals()[a] -= tau * u[col] / 2 * transport.vals()[a];
                 }
             }
             // left boundary condition
@@ -199,7 +199,7 @@ TEST_CASE("Inviscid Burgers equation, implicit, iterflux", "[Burgers-inviscid-im
 
     CsrMatrix mass = grid.mass_matrix();
     CsrMatrix block_transport = grid.block_transport_matrix();
-    CsrMatrix coupled_transport = grid.coupled_transport_matrix();
+    CsrMatrix coupled_transport = grid.coupling_transport_matrix();
     std::vector<double> load_vector = mass.mult_vec(std::vector<double>(grid.n_nodes(), 1.0));
 
     AmgcMatrixSolver slv(10'000, 1e-14);
@@ -233,7 +233,7 @@ TEST_CASE("Inviscid Burgers equation, implicit, iterflux", "[Burgers-inviscid-im
                 for (size_t a = lhs.addr()[i]; a < lhs.addr()[i + 1]; ++a)
                 {
                     size_t col = lhs.cols()[a];
-                    lhs.vals()[a] += tau * u[col] / 2 * block_transport.vals()[a];
+                    lhs.vals()[a] -= tau * u[col] / 2 * block_transport.vals()[a];
                 }
             }
 
@@ -347,12 +347,12 @@ TEST_CASE("Inviscid Burgers equation, cn", "[Burgers-inviscid-cn][amg]")
         {
             // left
             size_t iaddr = transport.find_index(lg[0], lg[0] - 1);
-            transport.vals()[iaddr] -= 1;
+            transport.vals()[iaddr] += 1;
         }
         {
             // right
             size_t iaddr = transport.find_index(lg[1], lg[1]);
-            transport.vals()[iaddr] += 1;
+            transport.vals()[iaddr] -= 1;
         }
     }
     std::vector<double> load_vector = mass.mult_vec(std::vector<double>(grid.n_nodes(), 1.0));
@@ -386,7 +386,7 @@ TEST_CASE("Inviscid Burgers equation, cn", "[Burgers-inviscid-cn][amg]")
         flux = transport.mult_vec(flux);
         for (size_t i = 0; i < grid.n_nodes(); ++i)
         {
-            rhs[i] -= (1 - theta) * tau * flux[i];
+            rhs[i] += (1 - theta) * tau * flux[i];
         }
         rhs[0] = 0.0;
 
@@ -399,7 +399,7 @@ TEST_CASE("Inviscid Burgers equation, cn", "[Burgers-inviscid-cn][amg]")
                 for (size_t a = lhs.addr()[i]; a < lhs.addr()[i + 1]; ++a)
                 {
                     size_t col = lhs.cols()[a];
-                    lhs.vals()[a] += theta * tau * u[col] / 2 * transport.vals()[a];
+                    lhs.vals()[a] -= theta * tau * u[col] / 2 * transport.vals()[a];
                 }
             }
             // left boundary condition

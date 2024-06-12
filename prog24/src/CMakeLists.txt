@@ -12,6 +12,7 @@ set (SRC
 	tests/nonlinsolver.cpp
 	tests/test_burgers_equation.cpp
 	tests/test_single_vessel.cpp
+	tests/test_props_vessel.cpp
 	bflow/vessel_graph.cpp
 	bflow/graph_grid.cpp
 	bflow/vtk.cpp

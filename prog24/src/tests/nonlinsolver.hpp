@@ -12,6 +12,7 @@ struct INonlinearSystem4
     virtual std::array<double, 4> f(double x1, double x2, double x3, double x4) const = 0;
     virtual std::array<double, 16> jac(double x1, double x2, double x3, double x4) const = 0;
 };
+
 struct INonlinearSystem6
 {
     virtual std::array<double, 6> f(double x1, double x2, double x3, double x4, double x5, double x6) const = 0;

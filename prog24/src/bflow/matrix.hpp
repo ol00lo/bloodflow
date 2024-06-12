@@ -42,6 +42,7 @@ public:
     void set_stencil(const std::vector<std::set<int>>& stencil_set);
     std::vector<double> mult_vec(const std::vector<double>& u) const;
     double mult_vec(int irow, const std::vector<double>& u) const;
+    void plus(double k, const CsrMatrix& other);
 
 private:
     std::vector<int> _addr;

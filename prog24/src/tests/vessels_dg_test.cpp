@@ -14,12 +14,13 @@
 #include <iomanip>
 using namespace bflow;
 
-TEST_CASE("Single vessel, inviscid", "[single-vessel-inviscid-explicit]")
+TEST_CASE("Single vessel, inviscid, explicit", "[single-vessel-inviscid-explicit]")
 {
     ProblemData data;
     double time = 0;
+    double L = 1.0;
     std::vector<std::vector<int>> node = {{0}, {0}};
-    std::vector<double> ed = {data.L};
+    std::vector<double> ed = {L};
     VesselGraph gr1(node, ed);
     GraphGrid grid1(gr1, 0.01, 1);
     FemGrid grid(grid1);
@@ -38,7 +39,10 @@ TEST_CASE("Single vessel, inviscid", "[single-vessel-inviscid-explicit]")
     saver.save_vtk_point_data(pressure, "pressure");
 
     std::vector<std::shared_ptr<IUpwindFluxCalculator>> upwind_flux_calculator(grid.n_points());
-    upwind_flux_calculator[0].reset(new InflowQFluxCalculator(grid, data, [&time]() { return time; }, 0));
+    auto qinput = [&time]()->double{
+        return 1e-6 * exp(-1e4 * (time - 0.05) * (time - 0.05));
+    };
+    upwind_flux_calculator[0].reset(new InflowQFluxCalculator(grid, data, qinput, 0));
     for (size_t i = 1; i < grid.n_points() - 1; ++i)
     {
             upwind_flux_calculator[i].reset(new InternalFluxCalculator(grid, data, i - 1, i));
@@ -55,7 +59,7 @@ TEST_CASE("Single vessel, inviscid", "[single-vessel-inviscid-explicit]")
     {
         time += tau;
         std::cout << "TIME=" << time;
-        std::cout << "  Q=" << data.q_inflow(time) << std::endl;
+        std::cout << "  Q=" << qinput() << std::endl;
 
         // nodewise fluxes
         std::vector<double> flux_a(grid.n_nodes());
@@ -81,18 +85,19 @@ TEST_CASE("Single vessel, inviscid", "[single-vessel-inviscid-explicit]")
         std::vector<double> tran_u = tran.mult_vec(flux_u);
         for (size_t i = 0; i < grid.n_nodes(); ++i)
         {
-            rhs_a[i] -= tau * tran_a[i];
-            rhs_u[i] -= tau * tran_u[i];
+            rhs_a[i] += tau * tran_a[i];
+            rhs_u[i] += tau * tran_u[i];
         }
         // + coupling
         for (size_t ielem = 0; ielem < grid.n_elements(); ++ielem)
         {
             size_t node0 = grid.tab_elem_nodes(ielem)[0];
             size_t node1 = grid.tab_elem_nodes(ielem)[1];
-            rhs_a[node0] += tau * upwind_fluxes[ielem].a_x0;
-            rhs_a[node1] -= tau * upwind_fluxes[ielem].a_x1;
-            rhs_u[node0] += tau * upwind_fluxes[ielem].u_x0;
-            rhs_u[node1] -= tau * upwind_fluxes[ielem].u_x1;
+            const auto& uf = upwind_fluxes[ielem];
+            rhs_a[node0] += tau * data.flux_a(uf.upwind_area_x0, uf.upwind_velo_x0);
+            rhs_a[node1] -= tau * data.flux_a(uf.upwind_area_x1, uf.upwind_velo_x1);
+            rhs_u[node0] += tau * data.flux_u(uf.upwind_area_x0, uf.upwind_velo_x0);
+            rhs_u[node1] -= tau * data.flux_u(uf.upwind_area_x1, uf.upwind_velo_x1);
         }
         // solve
         slv.solve(rhs_a, area);

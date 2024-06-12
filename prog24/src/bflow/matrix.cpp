@@ -197,3 +197,15 @@ bool LodMatrix::is_in_stencil(int i, int j) const
     else
         return false;
 }
+
+void CsrMatrix::plus(double k, const CsrMatrix& other)
+{
+    if (n_rows() != other.n_rows() || n_nonzeros() != other.n_nonzeros())
+    {
+        throw std::runtime_error("can not sum up matrices with different stencils");
+    }
+    for (size_t i = 0; i < n_nonzeros(); ++i)
+    {
+        _vals[i] += k * other._vals[i];
+    }
+}
