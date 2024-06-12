@@ -18,11 +18,11 @@ public:
 
 	double h(size_t ielem) const{
 		if (ielem < _ne1){
-			return _len1;
+			return _len1/_ne1;
 		} else if (ielem < _ne1 + _ne2){
-			return _len2;
+			return _len2/_ne2;
 		} else {
-			return _len3;
+			return _len3/_ne3;
 		}
 	}
 
@@ -42,26 +42,27 @@ public:
 		return _power + 1;
 	}
 
-	//double node(size_t i) const{
-	//        return _nodes[i];
-	//}
-
 	double full_length() const{
 		return _len1 + _len2 + _len3;
 	}
 
-	//size_t closest_node(double x) const {
-	//        double t = 1e16;
-	//        size_t ret = 0;
-	//        for (size_t i=0; i<n_nodes(); ++i){
-	//                double t1 = std::abs(_nodes[i] - x);
-	//                if (t1 < t){
-	//                        t = t1;
-	//                        ret = i;
-	//                }
-	//        }
-	//        return ret;
-	//};
+	size_t closest_node(size_t isection, double x) const {
+		size_t el0 = 0;
+		double h = 0;
+		switch(isection){
+			case 0: el0 = 0;         h = _len1 / _ne1; break;
+			case 1: el0 = _ne1;      h = _len2 / _ne2; break;
+			case 2: el0 = _ne1+_ne2; h = _len3 / _ne3; break;
+			default: throw std::runtime_error("Unreachable");
+		}
+		size_t ie = std::floor(x / h);
+		double xi = x/h - ie;
+		if (xi < 0.5){
+			return tab_elem_nodes(el0 + ie)[0];
+		} else {
+			return tab_elem_nodes(el0 + ie)[1];
+		}
+	};
 
 	CsrMatrix mass_matrix() const{
 		CsrMatrix ret(stencil());
@@ -168,8 +169,6 @@ private:
 	const double _len1, _len2, _len3;
 	mutable CsrStencil _stencil;
 	mutable std::vector<std::vector<size_t>> _tab_point_nodes;
-	//std::vector<double> _points;
-	//std::vector<double> _nodes;
 
 	CsrStencil stencil() const{
 		if (_stencil.n_rows() == 0){
@@ -307,7 +306,8 @@ public:
 
 class InflowAUFluxCalculator: public IUpwindFluxCalculator{
 public:
-	InflowAUFluxCalculator(std::function<std::pair<double,double>()> getau, size_t cell):
+	InflowAUFluxCalculator(const FemGrid& grid, const ProblemData& data, std::function<std::pair<double,double>()> getau, size_t cell):
+		_data(data),
 		_cell_right(cell),
 		_getau(getau)
 	{
@@ -316,10 +316,22 @@ public:
 	void compute(const std::vector<double>& area, const std::vector<double>& velocity, std::vector<ElementBoundaryFluxes>& fluxes) override{
 		double a, u;
 		std::tie(a, u) = _getau();
-		fluxes[_cell_right].upwind_area_x0 = a;
-		fluxes[_cell_right].upwind_velo_x0 = u;
+		//fluxes[_cell_right].upwind_area_x0 = a;
+		//fluxes[_cell_right].upwind_velo_x0 = u;
+
+		double w1_upw = _data.w1(a, u);
+		size_t _node_right = 0;
+		double w2_upw = _data.w2(area[_node_right], velocity[_node_right]);
+		//double w2_upw = 0;
+		double a1 = (w1_upw - w2_upw)/2 / _data.amult + _data.root4_a0;
+		double area_upw = a1*a1*a1*a1;
+		double velo_upw = (w1_upw + w2_upw)/2.0;
+
+		fluxes[_cell_right].upwind_area_x0 = area_upw;
+		fluxes[_cell_right].upwind_velo_x0 = velo_upw;
 	}
 private:
+	const ProblemData& _data;
 	const size_t _cell_right;
 	std::function<std::pair<double,double>()> _getau;
 };
@@ -399,7 +411,9 @@ public:
 	  _node2(grid.tab_elem_nodes(elem_right1)[0]),
 	  _node3(grid.tab_elem_nodes(elem_right2)[0]),
 	  _data1(data_left), _data2(data_right1), _data3(data_right2),
-	  _eps(eps), _sys(_data1, _data2, _data3)
+	  _eps(eps), _sys(_data1, _data2, _data3),
+	  _a1(_data1.area0), _a2(_data2.area0), _a3(_data3.area0),
+	  _u1(0), _u2(0), _u3(0)
 	{
 	}
 
@@ -442,7 +456,7 @@ public:
 			return{
 				_data1.flux_a(area1, velo1) - _data2.flux_a(area2, velo2) - _data3.flux_a(area3, velo3),
 				_data1.flux_u(area1, velo1) - _data2.flux_u(area2, velo2),
-				_data1.flux_u(area1, velo1) - _data2.flux_u(area3, velo3),
+				_data1.flux_u(area1, velo1) - _data3.flux_u(area3, velo3),
 				_data1.w1(area1, velo1) - _w1,
 				_data2.w2(area2, velo2) - _w2,
 				_data3.w2(area3, velo3) - _w3
@@ -702,6 +716,38 @@ private:
 	std::vector<double> _u, _area;
 };
 
+void time_value_vtk(double tau, const std::vector<double>& v, std::string filename){
+	std::ofstream fs(filename);
+	size_t n_nodes = v.size();
+	size_t n_cells = v.size()-1;
+	fs << "# vtk DataFile Version 3.0" << std::endl;
+	fs << "DG" << std::endl;
+	fs << "ASCII" << std::endl;
+	fs << "DATASET UNSTRUCTURED_GRID" << std::endl;
+	fs << "POINTS " << n_nodes << " double" << std::endl;
+	for (size_t i=0; i<n_nodes; ++i){
+		fs << i*tau << " 0 0" << std::endl;
+	}
+
+	//Cells
+	fs << "CELLS  " << n_cells << "   " << 3 * n_cells << std::endl;
+	for (size_t ielem = 0; ielem < n_cells; ++ielem){
+		fs << 2 << " " << ielem << " " << ielem + 1 << std::endl;
+	}
+	fs << "CELL_TYPES  " << n_cells << std::endl;
+	for (size_t i = 0; i < n_cells; ++i)
+		fs << 3 << std::endl;
+
+	// Data
+	fs << "POINT_DATA " << n_nodes << std::endl;
+	fs << "SCALARS area  double 1" << std::endl;
+	fs << "LOOKUP_TABLE default" << std::endl;
+	for (size_t i=0; i<n_nodes; ++i){
+		fs << v[i] << std::endl;
+	}
+	fs.close();
+}
+
 }
 
 TEST_CASE("Bifurcated vessel", "[bifurcated-vessel]"){
@@ -709,20 +755,20 @@ TEST_CASE("Bifurcated vessel", "[bifurcated-vessel]"){
 	data1.area0 = ProblemData::pi * 1e-4 / 4;
 	data1.rho = 1000;
 	data1.h = 1;
-	data1.E = 3.0 * data1.area0 * 324.97 / 4.0 / std::sqrt(ProblemData::pi);
+	data1.E = 3.0 * data1.area0 * 324970 / 4.0 / std::sqrt(ProblemData::pi);
 	data1.recompute();
 
 	ProblemData data2;
 	data2.area0 = ProblemData::pi * 1e-4 / 6.0 / 4.0;
 	data2.rho = 1000;
 	data2.h = 1;
-	data2.E = 3.0 * data1.area0 * 796.02 / 4.0 / std::sqrt(ProblemData::pi);
+	data2.E = 3.0 * data1.area0 * 796020 / 4.0 / std::sqrt(ProblemData::pi);
 	data2.recompute();
-
 
 	double time = 0;
 	double theta = 0.5;
 	double L = 0.2;
+	//size_t k3 = 50;
 	size_t k3 = 10;
 
 	FemGrid grid(L, k3, L, k3, L, k3, 1);
@@ -730,12 +776,14 @@ TEST_CASE("Bifurcated vessel", "[bifurcated-vessel]"){
 	for (size_t i=0; i<k3; ++i){
 		cell_types[i] = 1;
 	}
-	double tau = L/k3/50000;
+	double tau = L/k3/20;
 
-	//size_t monitoring_node1 = grid.closest_node(0.25 * L);
-	//size_t monitoring_node2 = grid.closest_node(0.5 * L);
-	//size_t monitoring_node3 = grid.closest_node(0.75 * L);
-	//std::vector<double> monitor1, monitor2, monitor3;
+	size_t monitoring_node_A = grid.closest_node(0, 0.0 * L);
+	size_t monitoring_node_B = grid.closest_node(0, 0.5 * L);
+	size_t monitoring_node_C = grid.closest_node(0, 0.9999 * L);
+	size_t monitoring_node_D = grid.closest_node(1, 0.5 * L);
+	size_t monitoring_node_E = grid.closest_node(1, 0.9999 * L);
+	std::vector<double> monitor_A, monitor_B, monitor_C, monitor_D, monitor_E;
 
 	std::vector<const ProblemData*> data(grid.n_elements());
 	for (size_t icell=0; icell<grid.n_elements(); ++icell){
@@ -747,14 +795,14 @@ TEST_CASE("Bifurcated vessel", "[bifurcated-vessel]"){
 	auto getau = [&time]()->std::pair<double, double>{
 		constexpr double time0 = 0.05;
 		constexpr double C = 5000;
-		constexpr double a = ProblemData::pi/4;
+		constexpr double a = 0.0001 * ProblemData::pi/4;
 
 		double t = time - time0;
 		double u = 0.01 * exp(-C*t*t);
 
 		return {a, u};
 	};
-	flux_calculators[0].reset(new InflowAUFluxCalculator(getau, 0));
+	flux_calculators[0].reset(new InflowAUFluxCalculator(grid, data1, getau, 0));
 	// internal
 	for (size_t i=1; i<k3; ++i) flux_calculators[i].reset(new InternalFluxCalculator(grid, data1, i-1, i));
 	for (size_t i=k3+1; i<2*k3; ++i) flux_calculators[i].reset(new InternalFluxCalculator(grid, data2, i-1, i));
@@ -769,7 +817,10 @@ TEST_CASE("Bifurcated vessel", "[bifurcated-vessel]"){
 	Assembler assem(grid, data, flux_calculators);
 
 	std::vector<double> velocity(grid.n_nodes(), 0.0);
-	std::vector<double> area(grid.n_nodes(), data1.area0);
+	std::vector<double> area(grid.n_nodes());
+	for (size_t i=0; i<grid.n_nodes(); ++i){
+		area[i] = (cell_types[grid.tab_node_elem(i)] == 1) ? data1.area0 : data2.area0;
+	}
 
 	AmgcMatrixSolver slv;
 
@@ -780,7 +831,7 @@ TEST_CASE("Bifurcated vessel", "[bifurcated-vessel]"){
 		assem.save_vtk(out_filename, area, velocity);
 	}
 
-	size_t iter_max = 1;
+	size_t iter_max = 10;
 
 	CsrMatrix block_u_transport;
 	std::vector<double> coupling_flux_ua;
@@ -788,7 +839,7 @@ TEST_CASE("Bifurcated vessel", "[bifurcated-vessel]"){
 	std::vector<double> coupling_flux_p;
 	std::vector<double> tmp;
 
-	//while (time < 0.25 - 1e-12){
+	//while (time < 0.5 - 1e-12){
 	while (time < 0.05 - 1e-12){
 		// assemble right hand side
 		assem.actualize_fluxes(time, area, velocity);
@@ -818,8 +869,8 @@ TEST_CASE("Bifurcated vessel", "[bifurcated-vessel]"){
 		}
 
 		time += tau;
-		std::cout << "TIME=" << time;
-		std::cout << "  U=" << getau().second << std::endl;
+		//std::cout << "TIME=" << time;
+		//std::cout << "  U=" << getau().second << std::endl;
 
 		double err_a = 1e6;
 		double err_u = 1e6;
@@ -892,15 +943,21 @@ TEST_CASE("Bifurcated vessel", "[bifurcated-vessel]"){
 		}
 
 		std::vector<double> pressure = assem.pressure(area);
-		//monitor1.push_back(pressure[monitoring_node1]);
-		//monitor2.push_back(pressure[monitoring_node2]);
-		//monitor3.push_back(pressure[monitoring_node3]);
+		
+		monitor_A.push_back(pressure[monitoring_node_A]);
+		monitor_B.push_back(pressure[monitoring_node_B]);
+		monitor_C.push_back(pressure[monitoring_node_C]);
+		monitor_D.push_back(pressure[monitoring_node_D]);
+		monitor_E.push_back(pressure[monitoring_node_E]);
 	}
 
 	std::vector<double> pressure = assem.pressure(area);
-	CHECK(pressure[20] == Approx(1521.4710994706).margin(1e-3));
+	double maxp = *std::max_element(pressure.begin(), pressure.end());
+	CHECK(maxp == Approx(6.262212285).margin(1e-3));
 
-	//time_value_vtk(tau, monitor1, "monitor1.vtk");
-	//time_value_vtk(tau, monitor2, "monitor2.vtk");
-	//time_value_vtk(tau, monitor3, "monitor3.vtk");
+	time_value_vtk(tau, monitor_A, "monitor_A.vtk");
+	time_value_vtk(tau, monitor_B, "monitor_B.vtk");
+	time_value_vtk(tau, monitor_C, "monitor_C.vtk");
+	time_value_vtk(tau, monitor_D, "monitor_D.vtk");
+	time_value_vtk(tau, monitor_E, "monitor_E.vtk");
 }
