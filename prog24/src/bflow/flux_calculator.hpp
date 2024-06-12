@@ -8,12 +8,7 @@ namespace bflow
 {
 struct ElementBoundaryFluxes
 {
-    double a_x0 = 0;
-    double a_x1 = 0;
-    double u_x0 = 0;
-    double u_x1 = 0;
-
-	double upwind_area_x0 = 0;
+    double upwind_area_x0 = 0;
     double upwind_area_x1 = 0;
     double upwind_velo_x0 = 0;
     double upwind_velo_x1 = 0;
@@ -25,7 +20,6 @@ struct ProblemData
     void recompute();
     static constexpr double pi = 3.1415926;
     // geometry parameters
-    double L = 1;
     double area0 = pi * 1e-4;
     // fluid parameters
     double rho = 1050;
@@ -34,8 +28,6 @@ struct ProblemData
     // vessel tissue parameters
     double h = 1.5e-3;
     double E = 4e5;
-    // inflow conditions
-    double q_inflow(double t) const;
     // p(a)
     double pressure(double area) const;
     // fluxes
@@ -238,7 +230,6 @@ private:
         const ProblemData& _data1;
         const ProblemData& _data2;
         double _w1, _w2;
-        static constexpr double _fm = 1;
     };
     const ProblemData& _data_left;
     const ProblemData& _data_right;

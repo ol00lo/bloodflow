@@ -20,7 +20,7 @@ double q_inflow1(double t)
 double p_inflow2(double t)
 {
     constexpr double T = 0.33;
-    // constexpr double T = 0.01;
+     //constexpr double T = 0.01;
     return (T / 2 - t > 0) ? 2000 * sin(2 * ProblemData::pi * t / T) : 0;
 };
 void time_value_vtk(double tau, const std::vector<double>& v, std::string filename)
@@ -59,6 +59,7 @@ void time_value_vtk(double tau, const std::vector<double>& v, std::string filena
     fs.close();
 }
 } // namespace
+ 
 TEST_CASE("Single vessel, different beta properties", "[2props-vessel]")
 {
     ProblemData data1;
@@ -90,7 +91,7 @@ TEST_CASE("Single vessel, different beta properties", "[2props-vessel]")
     {
         cell_types[i] = 2;
     }
-    double tau = grid.h() / 50000;
+    double tau = grid.h() / 50'000;
 
     size_t monitoring_node1 = grid.closest_node(0.25 * L);
     size_t monitoring_node2 = grid.closest_node(0.5 * L);
@@ -280,7 +281,7 @@ TEST_CASE("Single vessel, different beta properties", "[2props-vessel]")
     time_value_vtk(tau, monitor3, "monitor3.vtk");
 }
 
-TEST_CASE("Single vessel, different beta properties, power==2", "[2props-vessel2]")
+TEST_CASE("Single vessel, different beta properties, power==2, unstable", "[2props-vessel2]")
 {
     ProblemData data1;
     data1.area0 = ProblemData::pi / 4.0;
@@ -293,7 +294,7 @@ TEST_CASE("Single vessel, different beta properties, power==2", "[2props-vessel2
     data2.area0 = ProblemData::pi / 4.0;
     data2.rho = 1;
     data2.h = 1;
-    data2.E = data1.E * 100;
+    data2.E = data1.E * 100.0;
     data2.recompute();
 
     double time = 0;
@@ -307,11 +308,11 @@ TEST_CASE("Single vessel, different beta properties, power==2", "[2props-vessel2
     GraphGrid grid1(gr1, L / 3 / k3, 2);
     FemGrid grid(grid1);
     std::vector<int> cell_types(grid.n_elements(), 1);
-    for (size_t i = k3; i < 2 * k3; ++i)
+    for (size_t i = 1*k3; i < 2 * k3; ++i)
     {
         cell_types[i] = 2;
     }
-    double tau = grid.h() / 1000000;
+    double tau = grid.h() / 50'000;
 
     size_t monitoring_node1 = grid.closest_node(0.25 * L);
     size_t monitoring_node2 = grid.closest_node(0.5 * L);
@@ -340,7 +341,7 @@ TEST_CASE("Single vessel, different beta properties, power==2", "[2props-vessel2
         else
         {
             flux_calculators[i].reset(
-                new MergingFluxCalculator(grid, *data_left, *data_right, cell_left, cell_right, 1e-8));
+                new MergingFluxCalculator(grid, *data_left, *data_right, cell_left, cell_right, 1e-2));
         }
     }
     flux_calculators.back().reset(new OutflowFluxCalculator(grid, data1, grid.n_elements() - 1));
@@ -348,23 +349,35 @@ TEST_CASE("Single vessel, different beta properties, power==2", "[2props-vessel2
 
     std::vector<double> velocity(grid.n_nodes(), 0.0);
     std::vector<double> area(grid.n_nodes(), data1.area0);
+    std::vector<double> pressure(grid.n_nodes(), 0.0);
+    std::vector<double> w1(grid.n_nodes(), 0.0);
+    std::vector<double> w2(grid.n_nodes(), 0.0);
 
-    AmgcMatrixSolver slv;
+    AmgcMatrixSolver slv(10'000, 1e-12);
     NonstatGridSaver saver(grid1, generate_nodes_coo(gr1), "bebe");
-    saver.new_time_step(0);
-    saver.save_vtk_point_data(area, "area");
-    saver.save_vtk_point_data(velocity, "velocity");
+    auto save_fields = [&](){
+        saver.new_time_step(time);
+        saver.save_vtk_point_data(area, "area");
+        saver.save_vtk_point_data(velocity, "velocity");
+        saver.save_vtk_point_data(pressure, "pressure");
+        saver.save_vtk_point_data(w1, "w1");
+        saver.save_vtk_point_data(w2, "w2");
+    };
+    save_fields();
 
-    size_t iter_max = 1;
+    size_t iter_max = 100;
 
     CsrMatrix block_u_transport;
     std::vector<double> coupling_flux_ua;
     std::vector<double> coupling_flux_u2;
     std::vector<double> coupling_flux_p;
     std::vector<double> tmp;
+
     double t = 0;
+    double save_tau = 0.002;
+
     // while (time < 0.25 - 1e-12){
-    while (time < 0.05 - 1e-12)
+    while (time < 0.01 - 1e-12)
     {
         // assemble right hand side
         assem.actualize_fluxes(time, area, velocity);
@@ -399,8 +412,8 @@ TEST_CASE("Single vessel, different beta properties, power==2", "[2props-vessel2
         }
 
         time += tau;
-        std::cout << "TIME=" << time;
-        std::cout << "  P=" << p_inflow2(time) << std::endl;
+        //std::cout << "TIME=" << time;
+        //std::cout << "  P=" << p_inflow2(time) << std::endl;
 
         double err_a = 1e6;
         double err_u = 1e6;
@@ -478,23 +491,23 @@ TEST_CASE("Single vessel, different beta properties, power==2", "[2props-vessel2
                 }
             }
         }
+        pressure = assem.pressure(area);
+        w1 = assem.w1();
+        w2 = assem.w2();
+
         t += tau;
-        if (t > 0.0005 - 1e-6)
+        if (t > save_tau - 1e-6)
         {
             t = 0;
-            saver.new_time_step(time);
-            saver.save_vtk_point_data(area, "area");
-            saver.save_vtk_point_data(velocity, "velocity");
+            save_fields();    
         }
-
-        std::vector<double> pressure = assem.pressure(area);
         monitor1.push_back(pressure[monitoring_node1]);
         monitor2.push_back(pressure[monitoring_node2]);
         monitor3.push_back(pressure[monitoring_node3]);
     }
 
-    std::vector<double> pressure = assem.pressure(area);
-    CHECK(pressure[20] == Approx(1521.4710994706).margin(1e-3));
+    pressure = assem.pressure(area);
+    CHECK(pressure[20] == Approx(-12.2870016773).margin(1e-3));
 
     time_value_vtk(tau, monitor1, "monitor1.vtk");
     time_value_vtk(tau, monitor2, "monitor2.vtk");

@@ -13,7 +13,7 @@ AssemblerFlux::AssemblerFlux(const FemGrid& grid, const std::vector<const Proble
     }
 
     _mass = _grid.mass_matrix();
-    _tran = _grid.transport_matrix();
+    _tran = _grid.block_transport_matrix();
 
     _upwind_fluxes.resize(grid.n_elements());
     _flux_a.resize(_grid.n_nodes());
@@ -114,14 +114,15 @@ CsrMatrix AssemblerFlux::viscous_matrix() const
 
 CsrMatrix AssemblerFlux::block_u_transport() const
 {
+    //return _grid.block_u_transport_matrix(_u);
     CsrMatrix ret(_tran);
     for (size_t i = 0; i < _grid.n_nodes(); ++i)
     {
-        for (size_t a = ret.addr()[i]; a < ret.addr()[i + 1]; ++a)
-        {
-            size_t col = ret.cols()[a];
-            ret.vals()[a] *= _u[col];
-        }
+    for (size_t a = ret.addr()[i]; a < ret.addr()[i + 1]; ++a)
+    {
+        size_t col = ret.cols()[a];
+        ret.vals()[a] *= _u[col];
+    }
     }
     return ret;
 }
@@ -186,13 +187,25 @@ double AssemblerFlux::vector_norm2(const std::vector<double>& v) const
     return std::sqrt(s / _grid.full_length());
 }
 
-	std::vector<double> AssemblerFlux::pressure(const std::vector<double>& area) const
+std::vector<double> AssemblerFlux::pressure(const std::vector<double>& area) const
 {
     const double* a = (area.size() == 0) ? _area.data() : area.data();
     std::vector<double> ret(_grid.n_nodes());
     for (size_t i = 0; i < _grid.n_nodes(); ++i)
     {
         ret[i] = _data_by_node[i]->pressure(a[i]);
+    }
+    return ret;
+};
+
+std::vector<double> AssemblerFlux::w1() const
+{
+    const double* a = _area.data();
+    const double* u = _u.data();
+    std::vector<double> ret(_grid.n_nodes());
+    for (size_t i = 0; i < _grid.n_nodes(); ++i)
+    {
+        ret[i] = _data_by_node[i]->w1(a[i], u[i]);
     }
     return ret;
 };

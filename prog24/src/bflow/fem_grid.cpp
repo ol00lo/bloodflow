@@ -100,27 +100,6 @@ CsrMatrix FemGrid::mass_matrix() const
     return ret;
 }
 
-CsrMatrix FemGrid::transport_matrix() const
-{
-    CsrMatrix ret(stencil());
-    std::vector<double> local = local_transport_matrix();
-
-    for (size_t ielem = 0; ielem < n_elements(); ++ielem)
-    {
-        std::vector<int> lg = tab_elem_nodes(ielem);
-
-        // block diagonal
-        for (size_t irow = 0; irow < n_local_bases(); ++irow)
-            for (size_t icol = 0; icol < n_local_bases(); ++icol)
-            {
-                double v = local[irow * n_local_bases() + icol];
-                size_t iaddr = ret.find_index(lg[irow], lg[icol]);
-                ret.vals()[iaddr] += v;
-            }
-    }
-    return ret;
-}
-
 CsrMatrix FemGrid::block_transport_matrix() const
 {
     CsrMatrix ret(stencil());
@@ -136,14 +115,46 @@ CsrMatrix FemGrid::block_transport_matrix() const
             {
                 double v = local[irow * n_local_bases() + icol];
                 size_t iaddr = ret.find_index(lg[irow], lg[icol]);
-                ret.vals()[iaddr] -= v;
+                ret.vals()[iaddr] += v;
             }
     }
 
     return ret;
 }
 
-CsrMatrix FemGrid::coupled_transport_matrix() const
+CsrMatrix FemGrid::block_u_transport_matrix(const std::vector<double>& u) const
+{
+    size_t dim = n_local_bases();
+    CsrMatrix ret(stencil());
+    std::vector<double> local_u = local_u_transport_matrix();
+
+    for (int ielem = 0; ielem < n_elements(); ++ielem)
+    {
+        std::vector<int> lg = tab_elem_nodes(ielem);
+
+        std::vector<double> local(dim*dim, 0);
+        for (size_t i=0; i<dim; ++i){
+            for (size_t j=0; j<dim; ++j){
+                for (size_t k=0; k<dim; ++k){
+                    local[dim*i + j] += local_u[dim*dim*i + dim*j + k] * u[lg[k]];
+                }
+            }
+        }
+        
+        // block diagonal
+        for (int irow = 0; irow < n_local_bases(); ++irow)
+            for (int icol = 0; icol < n_local_bases(); ++icol)
+            {
+                double v = local[irow * n_local_bases() + icol];
+                size_t iaddr = ret.find_index(lg[irow], lg[icol]);
+                ret.vals()[iaddr] += v;
+            }
+    }
+
+    return ret;
+}
+
+CsrMatrix FemGrid::coupling_transport_matrix() const
 {
     CsrMatrix ret(stencil());
     for (size_t ielem = 0; ielem < n_elements(); ++ielem)
@@ -362,6 +373,27 @@ std::vector<double> FemGrid::local_transport_matrix() const
          3967.0/5775, -3967.0/5775,  -2136.0/1925,   87.0/77,        0.0,       -87.0/77,   2136.0/1925,
          -732.0/1925,  5151.0/6160,    243.0/385, -3807.0/6160,    87.0/77,        0.0,    -3078.0/1925,
           267.0/1925, -1776.0/1925,   -648.0/1925,  243.0/385,  -2136.0/1925,  3078.0/1925,     0.0 };
+    }
+    // clang-format on
+    else
+    {
+        _THROW_NOT_IMP_;
+    }
+}
+
+std::vector<double> FemGrid::local_u_transport_matrix() const
+{
+    // clang-format off
+    if (_power == 1)
+    {
+        return {-1.0/3, -1.0/6, -1.0/6, -1.0/3, 
+                 1.0/3,  1.0/6,  1.0/6,  1.0/3};
+    }
+    else if (_power == 2){
+        return {-1.0/3, 1.0/30, -1.0/5, 1.0/30, 1.0/15, 1.0/15, -1.0/5, 1.0/15, -8.0/15,
+                -1.0/15, -1.0/30, -1.0/15, -1.0/30, 1.0/3, 1.0/5.0, -1.0/15, 1.0/5, 8.0/15,                
+                2.0/5, 0, 4.0/15, 0, -2.0/5, -4.0/15, 4.0/15, -4.0/15, 0};
+               
     }
     // clang-format on
     else

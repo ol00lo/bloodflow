@@ -83,22 +83,22 @@ TEST_CASE("Transport equation, upwind", "[upwind-transport]")
         {
             // left
             size_t iaddr = transport.find_index(lg[0], lg[0] - 1);
-            transport.vals()[iaddr] -= 1;
+            transport.vals()[iaddr] += 1;
         }
         {
             // right
             size_t iaddr = transport.find_index(lg[1], lg[1]);
-            transport.vals()[iaddr] += 1;
+            transport.vals()[iaddr] -= 1;
         }
     }
     CsrMatrix lhs = mass;
     CsrMatrix rhs_mat = mass;
     double theta = 0.5;  // crank-nicolson
-    //double theat = 1.5;  // adams-bashforth
+    //double theta = 1.5;  // adams-bashforth
     for (size_t i = 0; i < mass.n_nonzeros(); ++i)
     {
-        lhs.vals()[i] += theta * tau * transport.vals()[i];
-        rhs_mat.vals()[i] -= (1 - theta) * tau * transport.vals()[i];
+        lhs.vals()[i] -= theta * tau * transport.vals()[i];
+        rhs_mat.vals()[i] += (1 - theta) * tau * transport.vals()[i];
     }
     // left boundary condition
     lhs.set_unit_row(0);

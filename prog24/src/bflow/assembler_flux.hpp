@@ -25,6 +25,7 @@ public:
     double compute_residual(const CsrMatrix& lhs, const std::vector<double>& rhs, const std::vector<double>& u) const;
     double vector_norm2(const std::vector<double>& v) const;
     std::vector<double> pressure(const std::vector<double>& area = std::vector<double>()) const;
+    std::vector<double> w1() const;
     std::vector<double> w2() const;
     void reset_flux_calculator(size_t icell, std::shared_ptr<IUpwindFluxCalculator> calc);
 private:
