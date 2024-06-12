@@ -100,26 +100,26 @@ CsrMatrix FemGrid::mass_matrix() const
     return ret;
 }
 
-//CsrMatrix FemGrid::transport_matrix() const
-//{
-//    CsrMatrix ret(stencil());
-//    std::vector<double> local = local_transport_matrix();
+CsrMatrix FemGrid::transport_matrix() const
+{
+    CsrMatrix ret(stencil());
+    std::vector<double> local = local_transport_matrix();
 
-//    for (size_t ielem = 0; ielem < n_elements(); ++ielem)
-//    {
-//        std::vector<int> lg = tab_elem_nodes(ielem);
+    for (size_t ielem = 0; ielem < n_elements(); ++ielem)
+    {
+        std::vector<int> lg = tab_elem_nodes(ielem);
 
-//        // block diagonal
-//        for (size_t irow = 0; irow < n_local_bases(); ++irow)
-//            for (size_t icol = 0; icol < n_local_bases(); ++icol)
-//            {
-//                double v = local[irow * n_local_bases() + icol];
-//                size_t iaddr = ret.find_index(lg[irow], lg[icol]);
-//                ret.vals()[iaddr] += v;
-//            }
-//    }
-//    return ret;
-//}
+        // block diagonal
+        for (size_t irow = 0; irow < n_local_bases(); ++irow)
+            for (size_t icol = 0; icol < n_local_bases(); ++icol)
+            {
+                double v = local[irow * n_local_bases() + icol];
+                size_t iaddr = ret.find_index(lg[irow], lg[icol]);
+                ret.vals()[iaddr] += v;
+            }
+    }
+    return ret;
+}
 
 CsrMatrix FemGrid::block_transport_matrix() const
 {
@@ -446,3 +446,31 @@ void FemGrid::fill_f_vec()
         }
     }
 }
+
+size_t FemGrid::closest_node(double x) const
+{
+    double t = 1e16;
+    size_t ret = 0;
+    for (size_t i = 0; i < n_nodes(); ++i)
+    {
+        double t1 = std::abs(_nodes[i] - x);
+        if (t1 < t)
+        {
+            t = t1;
+            ret = i;
+        }
+    }
+    return ret;
+};
+
+size_t FemGrid::tab_node_elem(size_t inode) const
+{
+    if (inode < (n_points()-1) * 2)
+    {
+        return inode / 2;
+    }
+    else
+    {
+        return (inode - n_points() * 2 + 2) / _power;
+    }
+};

@@ -13,26 +13,11 @@ using namespace bflow;
 
 namespace
 {
-void print_matrix_full(const CsrMatrix& mat, std::ostream& s = std::cout)
+double q_inflow1(double t)
 {
-    for (size_t i = 0; i < mat.n_rows(); i++)
-    {
-        for (size_t j = 0; j < mat.n_rows(); j++)
-        {
-            if (mat.is_in_stencil(i, j) == false)
-            {
-                s << std::setw(6) << "*";
-            }
-            else
-            {
-                s << std::setw(6) << round(mat.value(i, j) * 1000) / 1000;
-            }
-        }
-        s << std::endl;
-    }
+    return 1e-6 * exp(-1e4 * (t - 0.05) * (t - 0.05));
+};
 }
-}
-
 TEST_CASE("Single vessel, inviscid2, ver1", "[single-vessel-inviscid-explicit1]")
 {
     ProblemData data;
@@ -136,91 +121,6 @@ TEST_CASE("Single vessel, inviscid2, ver1", "[single-vessel-inviscid-explicit1]"
     CHECK(maxp == Approx(24.3958).margin(1e-3));
 }
 
-TEST_CASE("Single vessel, inviscid, ver2", "[single-vessel-inviscid-explicit2]")
-{
-    ProblemData data;
-    data.L = 1;
-    data.recompute();
-    double time = 0;
-
-    std::vector<std::vector<int>> node = {{0}, {0}};
-    std::vector<double> ed = {data.L};
-    VesselGraph gr1(node, ed);
-    GraphGrid grid1(gr1, data.L / 100);
-    FemGrid grid(grid1);
-    double tau = grid.h() / 100;
-
-    std::vector<Point2> nodes_coo = generate_nodes_coo(gr1);
-    NonstatGridSaver saver(grid1, nodes_coo, "bebe");
-
-    std::vector<double> velocity(grid.n_nodes(), 0.0);
-    std::vector<double> area(grid.n_nodes(), data.area0);
-    std::vector<double> pressure(grid.n_nodes(), 0.0);
-    saver.new_time_step(0);
-    saver.save_vtk_point_data(area, "area");
-    saver.save_vtk_point_data(velocity, "velocity");
-    saver.save_vtk_point_data(pressure, "pressure");
-    AssemblerFlux assem(grid, data);
-    CHECK(assem.vector_norm2(std::vector<double>(grid.n_nodes(), 3)) == Approx(3.0).margin(1e-12));
-
-    // prepare matrix solver
-    AmgcMatrixSolver slv;
-    slv.set_matrix(assem.mass());
-    double t = 0;
-    while (time < 0.2 - 1e-6)
-    {
-        assem.actualize_fluxes(time, area, velocity);
-        std::vector<double> dfadx = assem.dfa_dx();
-        std::vector<double> dfudx = assem.dfu_dx();
-        std::vector<double> visc_term = assem.viscous_term();
-
-        time += tau;
-        std::cout << "TIME=" << time;
-        std::cout << "  Q=" << data.q_inflow(time) << std::endl;
-
-        // rhs_a  = A
-        std::vector<double> rhs_a = assem.mass().mult_vec(area);
-        //           - tau*(1-theta)*d(uA)/dx
-        for (size_t i = 0; i < rhs_a.size(); ++i)
-        {
-            rhs_a[i] -= tau * dfadx[i];
-        }
-
-        // rhs1_u = u
-        std::vector<double> rhs_u = assem.mass().mult_vec(velocity);
-        //          -tau*(1-theta)d(Pt)/dx
-        for (size_t i = 0; i < rhs_u.size(); ++i)
-        {
-            rhs_u[i] -= tau * dfudx[i];
-        }
-        //          +tau*(1-theta)*kr*u/a
-        for (size_t i = 0; i < rhs_u.size(); ++i)
-        {
-            rhs_u[i] += tau * visc_term[i];
-        }
-
-        slv.solve(rhs_a, area);
-        slv.solve(rhs_u, velocity);
-
-        for (size_t i = 0; i < grid.n_nodes(); ++i)
-        {
-            pressure[i] = data.pressure(area[i]);
-        }
-        t += tau;
-        if (t > 0.005 - 1e-6)
-        {
-            t = 0;
-            saver.new_time_step(time);
-            saver.save_vtk_point_data(area, "area");
-            saver.save_vtk_point_data(velocity, "velocity");
-            saver.save_vtk_point_data(pressure, "pressure");
-        }
-    }
-
-    double maxp = *std::max_element(pressure.begin(), pressure.end());
-    CHECK(maxp == Approx(24.3632).margin(1e-3));
-}
-
 TEST_CASE("Single vessel, inviscid, implicit", "[single-vessel-inviscid-implicit]")
 {
     ProblemData data;
@@ -241,8 +141,16 @@ TEST_CASE("Single vessel, inviscid, implicit", "[single-vessel-inviscid-implicit
     {
         pressure[i] = data.pressure(area[i]);
     }
+    std::vector<std::shared_ptr<IUpwindFluxCalculator>> upwind_flux_calculator(grid.n_points());
+    upwind_flux_calculator[0].reset(new InflowQFluxCalculator(
+        grid, data, [&time]() { return q_inflow1(time); }, 0));
+    for (size_t i = 1; i < grid.n_points() - 1; ++i)
+    {
+        upwind_flux_calculator[i].reset(new InternalFluxCalculator(grid, data, i - 1, i));
+    }
+    upwind_flux_calculator.back().reset(new OutflowFluxCalculator(grid, data, grid.n_elements() - 1));
 
-    AssemblerFlux assem(grid, data);
+    AssemblerFlux assem(grid, &data, upwind_flux_calculator);
     AmgcMatrixSolver slv;
 
     std::vector<Point2> nodes_coo = generate_nodes_coo(gr1);

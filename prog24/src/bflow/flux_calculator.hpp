@@ -61,9 +61,11 @@ public:
 class InflowQFluxCalculator : public IUpwindFluxCalculator
 {
 public:
-    InflowQFluxCalculator(const FemGrid& grid, const ProblemData& data, std::function<double()> get_time, size_t cell);
+    InflowQFluxCalculator(const FemGrid& grid, const ProblemData& data, std::function<double()> getq, size_t cell,
+                          double eps = 1e-12);
     void compute(const std::vector<double>& area, const std::vector<double>& velocity,
                  std::vector<ElementBoundaryFluxes>& fluxes) override;
+	
 
 private:
     struct NonlinearSystem : public INonlinearSystem2
@@ -78,15 +80,107 @@ private:
         const double _mult, _root4_area0;
         double _q, _w2;
     };
+
     const ProblemData& _data;
-    std::function<double()> _get_time;
+    std::function<double()> _getq;
     const size_t _cell_right;
     const size_t _node_right;
-
     NonlinearSystem _sys;
+    const double _eps;
+
     double _a;
 };
+class InflowPFluxCalculator_NonReflecting : public IUpwindFluxCalculator
+{
+public:
+    InflowPFluxCalculator_NonReflecting(const FemGrid& grid, const ProblemData& data, std::function<double()> getp,
+                                        size_t cell)
+        : _data(data), _getp(getp), _cell_right(cell), _node_right(grid.tab_elem_nodes(cell)[0])
+    {
+    }
 
+    void compute(const std::vector<double>& area, const std::vector<double>& velocity,
+                 std::vector<ElementBoundaryFluxes>& fluxes) override;
+
+private:
+    const ProblemData& _data;
+    std::function<double()> _getp;
+    const size_t _cell_right;
+    const size_t _node_right;
+};
+
+class InflowPFluxCalculator : public IUpwindFluxCalculator
+{
+public:
+    InflowPFluxCalculator(const FemGrid& grid, const ProblemData& data, std::function<double()> getp, size_t cell,
+                          double eps = 1e-12)
+        : _data(data), _getp(getp), _cell_right(cell), _node_right(grid.tab_elem_nodes(cell)[0]),
+          _sys(data.amult, data.area0, data.beta), _eps(eps)
+    {
+        _a = data.area0;
+        _v = 0;
+    }
+
+    void compute(const std::vector<double>& area, const std::vector<double>& velocity,
+                 std::vector<ElementBoundaryFluxes>& fluxes) override;
+
+private:
+    struct NonlinearSystem : public INonlinearSystem2
+    {
+    public:
+        NonlinearSystem(double mult, double area0, double beta)
+            : _mult(mult), _area0(area0), _beta(beta), _root2_area0(std::pow(area0, 0.5)),
+              _root4_area0(std::pow(area0, 0.25))
+        {
+            set_pw(0, 0);
+        }
+
+        void set_pw(double p, double w2)
+        {
+            _p = p;
+            _w2 = w2;
+        };
+
+        std::array<double, 2> f(double area, double velo) const override
+        {
+            return {_beta * (sqrt(area) - _root2_area0) - _p, velo - _mult * (sqrt(sqrt(area)) - _root4_area0) - _w2};
+        };
+        std::array<double, 4> jac(double area, double velo) const override
+        {
+            return {0.5 * _beta / sqrt(area), 0, -0.25 * _mult * pow(area, -0.75), 1};
+        };
+
+    private:
+        const double _mult, _area0, _beta, _root2_area0, _root4_area0;
+        double _p, _w2;
+    };
+
+    const ProblemData& _data;
+    std::function<double()> _getp;
+    const size_t _cell_right;
+    const size_t _node_right;
+    NonlinearSystem _sys;
+    const double _eps;
+    double _a, _v;
+};
+
+class InflowW1FluxCalculator : public IUpwindFluxCalculator
+{
+public:
+    InflowW1FluxCalculator(const FemGrid& grid, const ProblemData& data, std::function<double()> getw1, size_t cell)
+        : _data(data), _getw1(getw1), _cell_right(cell), _node_right(grid.tab_elem_nodes(cell)[0])
+    {
+    }
+
+    void compute(const std::vector<double>& area, const std::vector<double>& velocity,
+                 std::vector<ElementBoundaryFluxes>& fluxes) override;
+
+private:
+    const ProblemData& _data;
+    std::function<double()> _getw1;
+    const size_t _cell_right;
+    const size_t _node_right;
+};
 class OutflowFluxCalculator : public IUpwindFluxCalculator
 {
 public:
@@ -126,8 +220,8 @@ private:
 class MergingFluxCalculator : public IUpwindFluxCalculator
 {
 public:
-    MergingFluxCalculator(const FemGrid& grid, const ProblemData& datal, const ProblemData& datar, size_t cell_left,
-                          size_t cell_right);
+    MergingFluxCalculator(const FemGrid& grid, const ProblemData& data_left, const ProblemData& data_right,
+                          size_t cell_left, size_t cell_right, double eps = 1e-12);
     void compute(const std::vector<double>& area, const std::vector<double>& velocity,
                  std::vector<ElementBoundaryFluxes>& fluxes) override;
 
@@ -135,30 +229,25 @@ private:
     struct NonlinearSystem : public INonlinearSystem4
     {
     public:
-        NonlinearSystem(double mult1, double mult2, double root4_area0_1, double root4_area0_2, double beta1,
-                        double beta2, double root2_area0_1, double root2_area0_2);
+        NonlinearSystem(const ProblemData& data1, const ProblemData& data2);
         void set_ww(double w1, double w2);
         std::array<double, 4> f(double area1, double velo1, double area2, double velo2) const override;
         std::array<double, 16> jac(double area1, double velo1, double area2, double velo2) const override;
 
     private:
-        double _mult1, _root4_area0_1, _bet1, _root2_area0_1;
-        double _mult2, _root4_area0_2, _bet2, _root2_area0_2;
+        const ProblemData& _data1;
+        const ProblemData& _data2;
         double _w1, _w2;
+        static constexpr double _fm = 1;
     };
-    const ProblemData& _data1;
-    const ProblemData& _data2;
-    const size_t _node_left;
-    const size_t _node_right;
-    const size_t _cell_left;
-    const size_t _cell_right;
-
+    const ProblemData& _data_left;
+    const ProblemData& _data_right;
+    const size_t _node_left, _node_right;
+    const size_t _cell_left, _cell_right;
     NonlinearSystem _sys;
+    const double _eps;
 
-    double _area1_upw;
-    double _area2_upw;
-    double _velo1_upw;
-    double _velo2_upw;
+    double _a1, _a2, _u1, _u2;
 };
 
 class Bifurcation3FluxCalculator : public IUpwindFluxCalculator
