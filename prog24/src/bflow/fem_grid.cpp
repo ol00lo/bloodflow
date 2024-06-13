@@ -503,6 +503,6 @@ size_t FemGrid::tab_node_elem(size_t inode) const
     }
     else
     {
-        return (inode - n_points() * 2 + 2) / _power;
+        return (inode - n_points() * 2 + _power) / _power;
     }
 };
