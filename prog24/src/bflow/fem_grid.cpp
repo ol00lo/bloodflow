@@ -8,27 +8,79 @@ FemGrid::FemGrid(const GraphGrid& grid) : _power(grid.n_midnodes)
     {
         throw std::runtime_error("Only power=1,2,3,4,5,6 is allowed");
     }
-    if (grid.n_edges() != 1)
+    if (grid.n_edges() < 1)
     {
         throw std::runtime_error("Only single vessel grids are allowed");
     }
-    _points.resize(grid.n_points(), 0.0);
-    double x = 0;
-    for (size_t i = 0; i < grid.n_elem(); ++i)
-    {
-        x += grid.find_cell_length(i);
-        _points[i + 1] = x;
-        _len += grid.find_cell_length(i);
-    }
-    _nodes.resize(grid.n_nodes() - (_power - 1) * (_points.size() - 1), 0);
-    _h = grid.find_cell_length(0);
+    std::vector<double> len_by_edge;
+    _h.resize(grid.n_elem());
 
-    for (size_t inode = 0; inode < _nodes.size(); ++inode)
+    double len = 0.0;
+    int elem = 0;
+    _points.push_back(len);
+    for (size_t i = 0; i < grid.n_edges(); i++)
     {
-        size_t ipoint = (inode + 1) / 2;
-        _nodes[inode] = _points[ipoint];
+        auto a = grid.points_by_edge(i);
+        if (grid.tab_point_nodes(a[0]).size() < 3)
+        {
+            int left = _nodes.size();
+            _nodes.push_back(len);
+            for (int j = 1; j < a.size()-1; j++)
+            {
+                len += grid.find_cell_length(elem);
+                _h[elem] = len;
+                elem++;
+                _points.push_back(len);
+                _nodes.push_back(len);
+                _nodes.push_back(len);
+            }
+            len += grid.find_cell_length(elem);
+            _h[elem] = len;
+            elem++;
+            _points.push_back(len);
+            _nodes.push_back(len);
+            int right = _nodes.size()-1;
+            _nodes_by_edge.push_back({left, right});
+        }
+        else
+        {
+            int left = _nodes.size();
+            double l = len_by_edge[0];
+            _nodes.push_back(l);
+            for (int j = 1; j < a.size()-1; j++)
+            {
+                l += grid.find_cell_length(elem);
+                _h[elem] = len;
+                elem++;
+                _points.push_back(l);
+                _nodes.push_back(l);
+                _nodes.push_back(l);
+            }
+            l += grid.find_cell_length(elem);
+            _h[elem] = len;
+            elem++;
+            _points.push_back(l);
+            _nodes.push_back(l);
+            int right = _nodes.size()-1;
+            _nodes_by_edge.push_back({left, right});
+        }
+        len_by_edge.push_back(len);
     }
-    double l = _h / _power;
+
+    _len = 0.6;
+    //for (size_t i = 0; i < grid.n_elem(); ++i)
+    //{
+    //    x += grid.find_cell_length(i);
+    //    _points[i + 1] = x;
+    //    _len += grid.find_cell_length(i);
+    //}
+    //_nodes.resize(grid.n_nodes() - (_power - 1) * (_points.size() - 1), 0);
+    //for (size_t inode = 0; inode < _nodes.size(); ++inode)
+    //{
+    //    size_t ipoint = (inode + 1) / 2;
+    //    _nodes[inode] = _points[ipoint];
+    //}
+    double l = _h[0] / _power;
     for (size_t i = 0; i < _points.size() - 1; i++)
     {
         double p = _points[i] + l;
@@ -41,9 +93,9 @@ FemGrid::FemGrid(const GraphGrid& grid) : _power(grid.n_midnodes)
     fill_f_vec();
 }
 
-double FemGrid::h() const
+double FemGrid::h(int ielem) const
 {
-    return _h;
+    return 2.0/30;
 }
 
 size_t FemGrid::n_nodes() const
@@ -89,14 +141,16 @@ CsrMatrix FemGrid::mass_matrix() const
     for (size_t ielem = 0; ielem < n_elements(); ++ielem)
     {
         std::vector<int> lg = tab_elem_nodes(ielem);
+
         for (size_t irow = 0; irow < n_local_bases(); ++irow)
             for (size_t icol = 0; icol < n_local_bases(); ++icol)
             {
-                double v = h() / 2 * local[irow * n_local_bases() + icol];
+                double v = h(ielem) / 2 * local[irow * n_local_bases() + icol];
                 size_t iaddr = ret.find_index(lg[irow], lg[icol]);
                 ret.vals()[iaddr] += v;
             }
     }
+
     return ret;
 }
 
@@ -407,74 +461,74 @@ void FemGrid::fill_f_vec()
     if (_power == 1)
     {
         for (size_t i = 0; i < _nodes.size(); i++)
-            _f_vec.push_back(_h / 2);
+            _f_vec.push_back(_h[0] / 2);
     }
     if (_power == 2)
     {
         for (size_t i = 0; i < _points.size(); i++)
         {
-            _f_vec.push_back(_h / 3 / 2);
-            _f_vec.push_back(_h / 3 / 2);
+            _f_vec.push_back(_h[0] / 3 / 2);
+            _f_vec.push_back(_h[0] / 3 / 2);
         }
         for (int i = 0; i < _points.size(); i++)
-            _f_vec.push_back(4.0 * _h / 3 / 2);
+            _f_vec.push_back(4.0 * _h[0] / 3 / 2);
     }
     if (_power == 3)
     {
         for (size_t i = 0; i < _points.size(); i++)
         {
-            _f_vec.push_back(_h / 4 / 2);
-            _f_vec.push_back(_h / 4 / 2);
+            _f_vec.push_back(_h[0] / 4 / 2);
+            _f_vec.push_back(_h[0] / 4 / 2);
         }
         for (int i = 0; i < _points.size(); i++)
         {
-            _f_vec.push_back(3.0 * _h / 4 / 2);
-            _f_vec.push_back(3.0 * _h / 4 / 2);
+            _f_vec.push_back(3.0 * _h[0] / 4 / 2);
+            _f_vec.push_back(3.0 * _h[0] / 4 / 2);
         }
     }
     if (_power == 4)
     {
         for (size_t i = 0; i < _points.size(); i++)
         {
-            _f_vec.push_back(7.0 * _h / 45 / 2);
-            _f_vec.push_back(7.0 * _h / 45 / 2);
+            _f_vec.push_back(7.0 * _h[0] / 45 / 2);
+            _f_vec.push_back(7.0 * _h[0] / 45 / 2);
         }
         for (int i = 0; i < _points.size(); i++)
         {
-            _f_vec.push_back(32.0 * _h / 45 / 2);
-            _f_vec.push_back(4.0 * _h / 15 / 2);
-            _f_vec.push_back(32.0 * _h / 45 / 2);
+            _f_vec.push_back(32.0 * _h[0] / 45 / 2);
+            _f_vec.push_back(4.0 * _h[0] / 15 / 2);
+            _f_vec.push_back(32.0 * _h[0] / 45 / 2);
         }
     }
     if (_power == 5)
     {
         for (size_t i = 0; i < _points.size(); i++)
         {
-            _f_vec.push_back(19.0 * _h / 144 / 2);
-            _f_vec.push_back(19.0 * _h / 144 / 2);
+            _f_vec.push_back(19.0 * _h[0] / 144 / 2);
+            _f_vec.push_back(19.0 * _h[0] / 144 / 2);
         }
         for (int i = 0; i < _points.size(); i++)
         {
-            _f_vec.push_back(25.0 * _h / 48 / 2);
-            _f_vec.push_back(25.0 * _h / 72 / 2);
-            _f_vec.push_back(25.0 * _h / 48 / 2);
-            _f_vec.push_back(25.0 * _h / 72 / 2);
+            _f_vec.push_back(25.0 * _h[0] / 48 / 2);
+            _f_vec.push_back(25.0 * _h[0] / 72 / 2);
+            _f_vec.push_back(25.0 * _h[0] / 48 / 2);
+            _f_vec.push_back(25.0 * _h[0] / 72 / 2);
         }
     }
     if (_power == 6)
     {
         for (size_t i = 0; i < _points.size(); i++)
         {
-            _f_vec.push_back(41.0 * _h / 420 / 2);
-            _f_vec.push_back(41.0 * _h / 420 / 2);
+            _f_vec.push_back(41.0 * _h[0] / 420 / 2);
+            _f_vec.push_back(41.0 * _h[0] / 420 / 2);
         }
         for (int i = 0; i < _points.size(); i++)
         {
-            _f_vec.push_back(18.0 * _h / 35 / 2);
-            _f_vec.push_back(9.0 * _h / 140 / 2);
-            _f_vec.push_back(68.0 * _h / 105 / 2);
-            _f_vec.push_back(9.0 * _h / 140 / 2);
-            _f_vec.push_back(18.0 * _h / 35 / 2);
+            _f_vec.push_back(18.0 * _h[0] / 35 / 2);
+            _f_vec.push_back(9.0 * _h[0] / 140 / 2);
+            _f_vec.push_back(68.0 * _h[0] / 105 / 2);
+            _f_vec.push_back(9.0 * _h[0] / 140 / 2);
+            _f_vec.push_back(18.0 * _h[0] / 35 / 2);
         }
     }
 }
@@ -495,6 +549,25 @@ size_t FemGrid::closest_node(double x) const
     return ret;
 };
 
+size_t FemGrid::closest_node(size_t section, double p) const
+{
+    auto nbe = _nodes_by_edge[section];
+    double min = std::abs(_nodes[nbe[0]]-p);
+    size_t res = nbe[0];
+    for (int i = nbe[0]+1; i <= nbe[1]; i++)
+    {
+        double x = std::abs(_nodes[i] - p);
+        if (std::abs(_nodes[i] - p) < min)
+        {
+            min = std::abs(_nodes[i] - p);
+            res = i;
+        }
+    }
+    if (p > _nodes[res]&& res!=nbe[0])
+        res++;
+
+    return res;
+}
 size_t FemGrid::tab_node_elem(size_t inode) const
 {
     if (inode < (n_points()-1) * 2)

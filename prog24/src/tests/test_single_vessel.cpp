@@ -28,7 +28,7 @@ TEST_CASE("Single vessel, inviscid2, ver1", "[single-vessel-inviscid-explicit1]"
     VesselGraph gr1(node, ed);
     GraphGrid grid1(gr1, L/100, 1);
     FemGrid grid(grid1);
-    double tau = grid.h() / 100;
+    double tau = grid.h(0) / 100;
     std::vector<ElementBoundaryFluxes> upwind_fluxes(grid.n_elements());
 
     std::vector<Point2> nodes_coo = generate_nodes_coo(gr1);
@@ -134,7 +134,7 @@ TEST_CASE("Single vessel, inviscid, implicit", "[single-vessel-inviscid-implicit
     VesselGraph gr1(node, ed);
     GraphGrid grid1(gr1, L / 30, 1);
     FemGrid grid(grid1);
-    double tau = grid.h() / 100;
+    double tau = grid.h(0) / 100;
 
     std::vector<double> velocity(grid.n_nodes(), 0.0);
     std::vector<double> area(grid.n_nodes(), data.area0);

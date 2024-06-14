@@ -221,7 +221,16 @@ std::vector<double> AssemblerFlux::w2() const
     }
     return ret;
 };
-
+std::vector<double> AssemblerFlux::area(std::vector<double> area) const
+{
+    std::vector<double> a1(_grid.n_nodes());
+    const std::vector<double>& a = (area.size() == 0) ? _area : area;
+    for (size_t i = 0; i < _grid.n_nodes(); ++i)
+    {
+        a1[i] = a[i] / _data[0]->area0 - 1;
+    }
+    return a1;
+}
 void AssemblerFlux::reset_flux_calculator(size_t icell, std::shared_ptr<IUpwindFluxCalculator> calc)
 {
     _upwind_flux_calculator[icell] = calc;

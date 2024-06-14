@@ -27,6 +27,7 @@ public:
     std::vector<double> pressure(const std::vector<double>& area = std::vector<double>()) const;
     std::vector<double> w1() const;
     std::vector<double> w2() const;
+    std::vector<double> area(std::vector<double> area) const;
     void reset_flux_calculator(size_t icell, std::shared_ptr<IUpwindFluxCalculator> calc);
 private:
     const FemGrid& _grid;

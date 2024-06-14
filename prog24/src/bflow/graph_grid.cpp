@@ -3,6 +3,22 @@
 
 using namespace bflow;
 
+namespace
+{
+void add_to_map(std::map<int, std::vector<int>>& m, int pl, std::vector<int> v)
+{
+    if (m.find(pl) != m.end())
+    {
+        for (auto x:v)
+            m.at(pl).push_back(x);
+    }
+    else
+    {
+        m.insert({pl, v});
+    }
+}
+}
+
 GraphGrid::GraphGrid(const VesselGraph& graph, double h, int nadd) : n_midnodes(nadd)
 {
     _points_by_edge.resize(graph.n_edges());
@@ -24,7 +40,7 @@ GraphGrid::GraphGrid(const VesselGraph& graph, double h, int nadd) : n_midnodes(
 
         _nodes_by_edge[edge].push_back(node);
         _points_by_edge[edge].push_back(boundary[0]);
-        _point_nodes.insert({boundary[0], {node}});
+        add_to_map(_point_nodes, boundary[0], {node});
         node++;
         for (size_t cells = 1; cells < m_cells; ++cells)
         {
@@ -32,7 +48,7 @@ GraphGrid::GraphGrid(const VesselGraph& graph, double h, int nadd) : n_midnodes(
             _nodes_by_edge[edge].push_back(node);
             node++;
             _nodes_by_edge[edge].push_back(node);
-            _point_nodes.insert({n_points, {node-1, node}});
+            add_to_map(_point_nodes, n_points, {node - 1, node});
             node++;
             //_cellslen.push_back(h_cell * cells);
             _cellslen.push_back(h_cell);
@@ -40,7 +56,7 @@ GraphGrid::GraphGrid(const VesselGraph& graph, double h, int nadd) : n_midnodes(
         }
         _points_by_edge[edge].push_back(boundary[1]);
         _nodes_by_edge[edge].push_back(node);
-        _point_nodes.insert({boundary[1], {node}});
+        add_to_map(_point_nodes, boundary[1], {node});
         node++;
         _cellslen.push_back(h_cell);
 

@@ -91,7 +91,7 @@ TEST_CASE("Single vessel, different beta properties", "[2props-vessel]")
     {
         cell_types[i] = 2;
     }
-    double tau = grid.h() / 50'000;
+    double tau = grid.h(0) / 50'000;
 
     size_t monitoring_node1 = grid.closest_node(0.25 * L);
     size_t monitoring_node2 = grid.closest_node(0.5 * L);
@@ -312,7 +312,7 @@ TEST_CASE("Single vessel, different beta properties, power==2, unstable", "[2pro
     {
         cell_types[i] = 2;
     }
-    double tau = grid.h() / 50'000;
+    double tau = grid.h(0) / 50'000;
 
     size_t monitoring_node1 = grid.closest_node(0.25 * L);
     size_t monitoring_node2 = grid.closest_node(0.5 * L);

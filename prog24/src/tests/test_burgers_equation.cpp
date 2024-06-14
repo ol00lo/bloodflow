@@ -23,7 +23,7 @@ TEST_CASE("Inviscid Burgers equation, explicit", "[Burgers-inviscid-explicit]")
     GraphGrid grid1(gr1, 0.1);
     std::vector<Point2> nodes_coo = generate_nodes_coo(gr1);
     FemGrid grid(grid1);
-    double tau = grid.h() / 2;
+    double tau = grid.h(0) / 2;
 
     CsrMatrix mass = grid.mass_matrix();
     CsrMatrix transport = grid.block_transport_matrix();
@@ -96,7 +96,7 @@ TEST_CASE("Inviscid Burgers equation, implicit", "[Burgers-inviscid-implicit][am
     GraphGrid grid1(gr1, 0.1);
     std::vector<Point2> nodes_coo = generate_nodes_coo(gr1);
     FemGrid grid(grid1);
-    double tau = grid.h() / 2;
+    double tau = grid.h(0) / 2;
 
     CsrMatrix mass = grid.mass_matrix();
     CsrMatrix transport = grid.block_transport_matrix();
@@ -195,7 +195,7 @@ TEST_CASE("Inviscid Burgers equation, implicit, iterflux", "[Burgers-inviscid-im
     GraphGrid grid1(gr1, 0.1);
     std::vector<Point2> nodes_coo = generate_nodes_coo(gr1);
     FemGrid grid(grid1);
-    double tau = grid.h() / 5;
+    double tau = grid.h(0) / 5;
 
     CsrMatrix mass = grid.mass_matrix();
     CsrMatrix block_transport = grid.block_transport_matrix();
@@ -334,7 +334,7 @@ TEST_CASE("Inviscid Burgers equation, cn", "[Burgers-inviscid-cn][amg]")
     GraphGrid grid1(gr1, 0.1);
     std::vector<Point2> nodes_coo = generate_nodes_coo(gr1);
     FemGrid grid(grid1);
-    double tau = grid.h() / 2;
+    double tau = grid.h(0) / 2;
     double theta = 0.5;
 
     CsrMatrix mass = grid.mass_matrix();

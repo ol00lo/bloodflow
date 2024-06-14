@@ -38,7 +38,7 @@ double norm2(FemGrid grid, std::vector<double> u, double time)
     {
         double r = u[i] - exact(grid.node(i), time);
         I += lv[i] * (r * r);
-        gamma += grid.h();
+        gamma += grid.h(0);
     }
     return std::sqrt(I / gamma);
 }
@@ -71,7 +71,7 @@ TEST_CASE("Transport equation, upwind", "[upwind-transport]")
     GraphGrid grid1(gr1, 0.1, 2);
     std::vector<Point2> nodes_coo = generate_nodes_coo(gr1);
     FemGrid grid(grid1);
-    double tau = grid.h() / 2;
+    double tau = grid.h(0) / 2;
 
     CsrMatrix mass = grid.mass_matrix();
     CsrMatrix transport = grid.block_transport_matrix();
