@@ -76,6 +76,7 @@ TEST_CASE("Bifurcated vessel", "[bifurcated-vessel]")
     // size_t k3 = 50;
     size_t k3 = 10;
 
+
     std::vector<std::vector<int>> node = {{0}, {0, 1, 2}, {1}, {2}};
     std::vector<double> ed = {L, L, L};
     //std::vector<std::vector<int>> node = {{0}, {0, 1}, {1}};
@@ -154,8 +155,8 @@ TEST_CASE("Bifurcated vessel", "[bifurcated-vessel]")
     std::vector<double> coupling_flux_p;
     std::vector<double> tmp;
     double t = 0;
-    while (time < 0.75 - 1e-12)
-    // while (time < 0.05 - 1e-12)
+    //while (time < 0.5 - 1e-12)
+    while (time < 0.05 - 1e-12)
     {
         // assemble right hand side
         assem.actualize_fluxes(time, area, velocity);

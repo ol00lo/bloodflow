@@ -14,23 +14,37 @@ FemGrid::FemGrid(const GraphGrid& grid) : _power(grid.n_midnodes)
     }
     std::vector<double> len_by_edge;
     _h.resize(grid.n_elem());
-
     double len = 0.0;
     int elem = 0;
-    _points.push_back(len);
+    // green - points from grid
+    // red   - points from this
+    // blue  - nodes
+    std::set<int> used_greens;
+    std::vector<int> red_to_green;
     for (size_t i = 0; i < grid.n_edges(); i++)
     {
         auto a = grid.points_by_edge(i);
         if (grid.tab_point_nodes(a[0]).size() < 3)
         {
+            _points.push_back(len);
+            if (used_greens.find(a[0]) == used_greens.end())
+            {
+                red_to_green.push_back(a[0]);
+                used_greens.insert(a[0]);
+            }
             int left = _nodes.size();
             _nodes.push_back(len);
-            for (int j = 1; j < a.size()-1; j++)
+            for (int j = 1; j < a.size() - 1; j++)
             {
                 len += grid.find_cell_length(elem);
                 _h[elem] = len;
                 elem++;
                 _points.push_back(len);
+                if (used_greens.find(a[j]) == used_greens.end())
+                {
+                    red_to_green.push_back(a[j]);
+                    used_greens.insert(a[j]);
+                }
                 _nodes.push_back(len);
                 _nodes.push_back(len);
             }
@@ -38,8 +52,14 @@ FemGrid::FemGrid(const GraphGrid& grid) : _power(grid.n_midnodes)
             _h[elem] = len;
             elem++;
             _points.push_back(len);
+            if (used_greens.find(a.back()) == used_greens.end())
+            {
+                red_to_green.push_back(a.back());
+                used_greens.insert(a.back());
+            }
+            //_nodes_by_point.push_back(x[j]);
             _nodes.push_back(len);
-            int right = _nodes.size()-1;
+            int right = _nodes.size() - 1;
             _nodes_by_edge.push_back({left, right});
         }
         else
@@ -47,12 +67,22 @@ FemGrid::FemGrid(const GraphGrid& grid) : _power(grid.n_midnodes)
             int left = _nodes.size();
             double l = len_by_edge[0];
             _nodes.push_back(l);
-            for (int j = 1; j < a.size()-1; j++)
+            if (used_greens.find(a[0]) == used_greens.end())
+            {
+                red_to_green.push_back(a[0]);
+                used_greens.insert(a[0]);
+            }
+            for (int j = 1; j < a.size() - 1; j++)
             {
                 l += grid.find_cell_length(elem);
                 _h[elem] = len;
                 elem++;
                 _points.push_back(l);
+                if (used_greens.find(a[j]) == used_greens.end())
+                {
+                    red_to_green.push_back(a[j]);
+                    used_greens.insert(a[j]);
+                }
                 _nodes.push_back(l);
                 _nodes.push_back(l);
             }
@@ -60,26 +90,28 @@ FemGrid::FemGrid(const GraphGrid& grid) : _power(grid.n_midnodes)
             _h[elem] = len;
             elem++;
             _points.push_back(l);
+            if (used_greens.find(a.back()) == used_greens.end())
+            {
+                red_to_green.push_back(a.back());
+                used_greens.insert(a.back());
+            }
             _nodes.push_back(l);
-            int right = _nodes.size()-1;
+            int right = _nodes.size() - 1;
             _nodes_by_edge.push_back({left, right});
         }
         len_by_edge.push_back(len);
     }
 
-    _len = 0.6;
-    //for (size_t i = 0; i < grid.n_elem(); ++i)
-    //{
-    //    x += grid.find_cell_length(i);
-    //    _points[i + 1] = x;
-    //    _len += grid.find_cell_length(i);
-    //}
-    //_nodes.resize(grid.n_nodes() - (_power - 1) * (_points.size() - 1), 0);
-    //for (size_t inode = 0; inode < _nodes.size(); ++inode)
-    //{
-    //    size_t ipoint = (inode + 1) / 2;
-    //    _nodes[inode] = _points[ipoint];
-    //}
+    for (int i = 0; i < grid.n_elem(); i++)
+    {
+        _h[i] = grid.find_cell_length(i);
+        _len += grid.find_cell_length(i);
+    }
+    for (int i = 0; i < red_to_green.size(); i++)
+    {
+        _nodes_by_point.push_back(grid.tab_point_nodes(red_to_green[i]));
+    }
+
     double l = _h[0] / _power;
     for (size_t i = 0; i < _points.size() - 1; i++)
     {
@@ -95,7 +127,7 @@ FemGrid::FemGrid(const GraphGrid& grid) : _power(grid.n_midnodes)
 
 double FemGrid::h(int ielem) const
 {
-    return 2.0/30;
+    return _h[ielem];
 }
 
 size_t FemGrid::n_nodes() const
@@ -105,7 +137,7 @@ size_t FemGrid::n_nodes() const
 
 size_t FemGrid::n_elements() const
 {
-    return _points.size() - 1;
+    return _nodes.size() / 2;
 }
 
 size_t FemGrid::n_points() const
@@ -186,15 +218,18 @@ CsrMatrix FemGrid::block_u_transport_matrix(const std::vector<double>& u) const
     {
         std::vector<int> lg = tab_elem_nodes(ielem);
 
-        std::vector<double> local(dim*dim, 0);
-        for (size_t i=0; i<dim; ++i){
-            for (size_t j=0; j<dim; ++j){
-                for (size_t k=0; k<dim; ++k){
-                    local[dim*i + j] += local_u[dim*dim*i + dim*j + k] * u[lg[k]];
+        std::vector<double> local(dim * dim, 0);
+        for (size_t i = 0; i < dim; ++i)
+        {
+            for (size_t j = 0; j < dim; ++j)
+            {
+                for (size_t k = 0; k < dim; ++k)
+                {
+                    local[dim * i + j] += local_u[dim * dim * i + dim * j + k] * u[lg[k]];
                 }
             }
         }
-        
+
         // block diagonal
         for (int irow = 0; irow < n_local_bases(); ++irow)
             for (int icol = 0; icol < n_local_bases(); ++icol)
@@ -308,6 +343,15 @@ CsrMatrix FemGrid::stencil() const
                 lod[nodes[0]].insert(nodes[1]);
                 lod[nodes[1]].insert(nodes[0]);
             }
+            else if (nodes.size() == 3)
+            {
+                lod[nodes[0]].insert(nodes[1]);
+                lod[nodes[0]].insert(nodes[2]);
+                lod[nodes[1]].insert(nodes[0]);
+                lod[nodes[1]].insert(nodes[2]);
+                lod[nodes[2]].insert(nodes[0]);
+                lod[nodes[2]].insert(nodes[1]);
+            }
         }
         _stencil.set_stencil(lod);
     }
@@ -316,12 +360,7 @@ CsrMatrix FemGrid::stencil() const
 
 std::vector<int> FemGrid::tab_point_nodes(int ipoint) const
 {
-    if (ipoint == 0)
-        return {0};
-    else if (ipoint == n_points() - 1)
-        return {2 * ipoint};
-    else
-        return {2 * ipoint - 1, 2 * ipoint};
+    return _nodes_by_point[ipoint];
 }
 
 std::vector<double> FemGrid::local_mass_matrix() const
@@ -552,9 +591,9 @@ size_t FemGrid::closest_node(double x) const
 size_t FemGrid::closest_node(size_t section, double p) const
 {
     auto nbe = _nodes_by_edge[section];
-    double min = std::abs(_nodes[nbe[0]]-p);
+    double min = std::abs(_nodes[nbe[0]] - p);
     size_t res = nbe[0];
-    for (int i = nbe[0]+1; i <= nbe[1]; i++)
+    for (int i = nbe[0] + 1; i <= nbe[1]; i++)
     {
         double x = std::abs(_nodes[i] - p);
         if (std::abs(_nodes[i] - p) < min)
@@ -563,14 +602,14 @@ size_t FemGrid::closest_node(size_t section, double p) const
             res = i;
         }
     }
-    if (p > _nodes[res]&& res!=nbe[0])
+    if (p > _nodes[res] && res != nbe[0])
         res++;
 
     return res;
 }
 size_t FemGrid::tab_node_elem(size_t inode) const
 {
-    if (inode < (n_points()-1) * 2)
+    if (inode < (n_points() - 1) * 2)
     {
         return inode / 2;
     }

@@ -42,6 +42,7 @@ private:
     std::vector<int> tab_point_nodes(int ipoint) const;
     void fill_f_vec();
     std::vector<std::array<int, 2>> _nodes_by_edge;
+    std::vector<std::vector<int>> _nodes_by_point;
 };
 } // namespace bflow
 #endif
