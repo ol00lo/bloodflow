@@ -1,3 +1,5 @@
+#include "bflow/fem_grid.hpp"
+#include "bflow/flux_calculator.hpp"
 #include "bflow/graph_grid.hpp"
 #include "bflow/macros.hpp"
 #include "bflow/matrix.hpp"
@@ -5,10 +7,8 @@
 #include "bflow/time_series_writer.hpp"
 #include "bflow/vessel_graph.hpp"
 #include "bflow/vtk.hpp"
-#include "tests/nonlinsolver.hpp"
-#include "bflow/fem_grid.hpp"
-#include "bflow/flux_calculator.hpp"
 #include "catch.hpp"
+#include "tests/nonlinsolver.hpp"
 #include <fstream>
 
 #include <iomanip>
@@ -39,13 +39,11 @@ TEST_CASE("Single vessel, inviscid, explicit", "[single-vessel-inviscid-explicit
     saver.save_vtk_point_data(pressure, "pressure");
 
     std::vector<std::shared_ptr<IUpwindFluxCalculator>> upwind_flux_calculator(grid.n_points());
-    auto qinput = [&time]()->double{
-        return 1e-6 * exp(-1e4 * (time - 0.05) * (time - 0.05));
-    };
+    auto qinput = [&time]() -> double { return 1e-6 * exp(-1e4 * (time - 0.05) * (time - 0.05)); };
     upwind_flux_calculator[0].reset(new InflowQFluxCalculator(grid, data, qinput, 0));
     for (size_t i = 1; i < grid.n_points() - 1; ++i)
     {
-            upwind_flux_calculator[i].reset(new InternalFluxCalculator(grid, data, i - 1, i));
+        upwind_flux_calculator[i].reset(new InternalFluxCalculator(grid, data, i - 1, i));
     }
     upwind_flux_calculator.back().reset(new OutflowFluxCalculator(grid, data, grid.n_elements() - 1));
     // prepare matrix solver
@@ -108,7 +106,7 @@ TEST_CASE("Single vessel, inviscid, explicit", "[single-vessel-inviscid-explicit
             pressure[i] = data.pressure(area[i]);
         }
         t += tau;
-        if (t - 1e-5< time )
+        if (t - 1e-5 < time)
         {
             saver.new_time_step(time);
             saver.save_vtk_point_data(velocity, "velocity");

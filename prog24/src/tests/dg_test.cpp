@@ -1,3 +1,4 @@
+#include "bflow/fem_grid.hpp"
 #include "bflow/graph_grid.hpp"
 #include "bflow/macros.hpp"
 #include "bflow/matrix.hpp"
@@ -5,7 +6,6 @@
 #include "bflow/time_series_writer.hpp"
 #include "bflow/vessel_graph.hpp"
 #include "bflow/vtk.hpp"
-#include "bflow/fem_grid.hpp"
 #include "catch.hpp"
 #include <fstream>
 
@@ -93,8 +93,8 @@ TEST_CASE("Transport equation, upwind", "[upwind-transport]")
     }
     CsrMatrix lhs = mass;
     CsrMatrix rhs_mat = mass;
-    double theta = 0.5;  // crank-nicolson
-    //double theta = 1.5;  // adams-bashforth
+    double theta = 0.5; // crank-nicolson
+    // double theta = 1.5;  // adams-bashforth
     for (size_t i = 0; i < mass.n_nonzeros(); ++i)
     {
         lhs.vals()[i] -= theta * tau * transport.vals()[i];
@@ -128,11 +128,11 @@ TEST_CASE("Transport equation, upwind", "[upwind-transport]")
         slv.solve(rhs, u);
 
         // std::cout << t << "  ";
-        //std::cout << norm2(grid, u, t) << std::endl;
+        // std::cout << norm2(grid, u, t) << std::endl;
 
         saver.new_time_step(t);
         saver.save_vtk_point_data(u, "data");
     }
-    //CHECK(u[50] == Approx(1.071884924).margin(1e-6));
+    // CHECK(u[50] == Approx(1.071884924).margin(1e-6));
     CHECK(norm2(grid, u, 2.0) == Approx(0.284369755).margin(1e-4));
 }

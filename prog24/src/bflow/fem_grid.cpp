@@ -112,6 +112,7 @@ FemGrid::FemGrid(const GraphGrid& grid) : _power(grid.n_midnodes)
         _nodes_by_point.push_back(grid.tab_point_nodes(red_to_green[i]));
     }
 
+    _n_elements = _nodes.size() / 2;
     double l = _h[0] / _power;
     for (size_t i = 0; i < _points.size() - 1; i++)
     {
@@ -137,7 +138,7 @@ size_t FemGrid::n_nodes() const
 
 size_t FemGrid::n_elements() const
 {
-    return _nodes.size() / 2;
+    return _n_elements;
 }
 
 size_t FemGrid::n_points() const
@@ -351,6 +352,10 @@ CsrMatrix FemGrid::stencil() const
                 lod[nodes[1]].insert(nodes[2]);
                 lod[nodes[2]].insert(nodes[0]);
                 lod[nodes[2]].insert(nodes[1]);
+            }
+            else if (nodes.size() > 3)
+            {
+                _THROW_NOT_IMP_;
             }
         }
         _stencil.set_stencil(lod);
@@ -595,7 +600,6 @@ size_t FemGrid::closest_node(size_t section, double p) const
     size_t res = nbe[0];
     for (int i = nbe[0] + 1; i <= nbe[1]; i++)
     {
-        double x = std::abs(_nodes[i] - p);
         if (std::abs(_nodes[i] - p) < min)
         {
             min = std::abs(_nodes[i] - p);

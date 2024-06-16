@@ -2,8 +2,8 @@
 #define MATRIX_HPP
 
 #include <map>
-#include <vector>
 #include <set>
+#include <vector>
 
 namespace bflow
 {
@@ -26,9 +26,13 @@ class CsrMatrix : public ISparseMatrix
 public:
     CsrMatrix() = default;
     CsrMatrix(const std::vector<int>& addr, const std::vector<int>& cols, const std::vector<double>& vals)
-        : _addr(addr), _cols(cols), _vals(vals) {}
+        : _addr(addr), _cols(cols), _vals(vals)
+    {
+    }
     CsrMatrix(std::vector<int>&& addr, std::vector<int>&& cols, std::vector<double>&& vals)
-        : _addr(std::move(addr)), _cols(std::move(cols)), _vals(std::move(vals)) {}
+        : _addr(std::move(addr)), _cols(std::move(cols)), _vals(std::move(vals))
+    {
+    }
     int n_rows() const override;
     double value(int i, int j) const override;
     bool is_in_stencil(int i, int j) const override;

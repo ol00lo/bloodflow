@@ -9,7 +9,7 @@ void add_to_map(std::map<int, std::vector<int>>& m, int pl, std::vector<int> v)
 {
     if (m.find(pl) != m.end())
     {
-        for (auto x:v)
+        for (auto x : v)
             m.at(pl).push_back(x);
     }
     else
@@ -17,7 +17,7 @@ void add_to_map(std::map<int, std::vector<int>>& m, int pl, std::vector<int> v)
         m.insert({pl, v});
     }
 }
-}
+} // namespace
 
 GraphGrid::GraphGrid(const VesselGraph& graph, double h, int nadd) : n_midnodes(nadd)
 {
@@ -112,7 +112,6 @@ GraphGrid::GraphGrid(const VesselGraph& graph, double h, int nadd) : n_midnodes(
         _point_cells[_cell_points[cell][0]].push_back(cell);
         _point_cells[_cell_points[cell][1]].push_back(cell);
     }
-
 }
 
 int GraphGrid::n_points() const
@@ -120,7 +119,7 @@ int GraphGrid::n_points() const
     return _n_points;
 }
 
- int GraphGrid::n_nodes() const
+int GraphGrid::n_nodes() const
 {
     return _n_nodes;
 }
@@ -181,7 +180,7 @@ std::array<int, 2> GraphGrid::node_by_cell(int cell) const
     return _cells[cell];
 };
 
- std::vector<std::array<int, 2>> GraphGrid::cells() const
+std::vector<std::array<int, 2>> GraphGrid::cells() const
 {
     return _cells;
 }

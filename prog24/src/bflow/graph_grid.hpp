@@ -1,8 +1,8 @@
 #ifndef GRAPH_GRID_HPP
 #define GRAPH_GRID_HPP
-#include "vessel_graph.hpp"
-#include "bflow/matrix.hpp"
 #include "bflow/macros.hpp"
+#include "bflow/matrix.hpp"
+#include "vessel_graph.hpp"
 #include <array>
 #include <cmath>
 #include <iostream>
@@ -21,7 +21,7 @@ struct Point2
 class GraphGrid
 {
 public:
-    GraphGrid(const VesselGraph& graph, double h, int nadd=1);
+    GraphGrid(const VesselGraph& graph, double h, int nadd = 1);
     int n_points() const;
     int n_nodes() const;
     int n_elem() const;
@@ -56,7 +56,6 @@ private:
     std::vector<std::vector<int>> _nodes_by_edge;
     std::vector<std::array<int, 2>> _bound_points;
     std::map<int, std::vector<int>> _point_nodes;
-
 };
 } // namespace bflow
 #endif

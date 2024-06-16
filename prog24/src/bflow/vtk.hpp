@@ -21,7 +21,6 @@ private:
     std::vector<std::array<int, 2>> _cells;
 };
 
-
 class NonstatGridSaver
 {
 public:
@@ -29,6 +28,7 @@ public:
     void new_time_step(double t);
     void save_vtk_point_data(const std::vector<double>& data, std::string data_name) const;
     void save_vtk_cell_data(const std::vector<double>& data, std::string data_name) const;
+
 private:
     GridSaver _vtk;
     std::vector<double> _times;
@@ -40,6 +40,7 @@ private:
     std::string print_files() const;
 };
 
+void time_value_vtk(double tau, const std::vector<double>& v, std::string filename);
 
 } // namespace bflow
 

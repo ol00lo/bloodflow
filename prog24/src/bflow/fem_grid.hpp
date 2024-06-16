@@ -14,7 +14,6 @@ public:
     size_t n_local_bases() const;
     double node(size_t i) const;
     std::vector<double> load_vector() const;
-    std::vector<int> tab_elem_nodes(int ielem) const;
     double full_length() const;
     // integral[ phi_j phi_i dx]
     CsrMatrix mass_matrix() const;
@@ -27,6 +26,9 @@ public:
     size_t closest_node(double x) const;
     size_t closest_node(size_t section, double p) const;
     size_t tab_node_elem(size_t inode) const;
+    std::vector<int> tab_elem_nodes(int ielem) const;
+    std::vector<int> tab_point_nodes(int ipoint) const;
+
 private:
     const int _power;
     mutable CsrMatrix _stencil;
@@ -39,10 +41,10 @@ private:
     std::vector<double> local_mass_matrix() const;
     std::vector<double> local_u_transport_matrix() const;
     std::vector<double> local_transport_matrix() const;
-    std::vector<int> tab_point_nodes(int ipoint) const;
     void fill_f_vec();
     std::vector<std::array<int, 2>> _nodes_by_edge;
     std::vector<std::vector<int>> _nodes_by_point;
+    size_t _n_elements = 0;
 };
 } // namespace bflow
 #endif

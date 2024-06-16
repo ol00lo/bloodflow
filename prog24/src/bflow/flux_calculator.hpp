@@ -16,9 +16,11 @@ struct ElementBoundaryFluxes
 
 struct ProblemData
 {
+    static constexpr double pi = 3.1415926;
+
     ProblemData();
     void recompute();
-    static constexpr double pi = 3.1415926;
+    void report() const;
     // geometry parameters
     double area0 = pi * 1e-4;
     // fluid parameters
@@ -57,7 +59,6 @@ public:
                           double eps = 1e-12);
     void compute(const std::vector<double>& area, const std::vector<double>& velocity,
                  std::vector<ElementBoundaryFluxes>& fluxes) override;
-	
 
 private:
     struct NonlinearSystem : public INonlinearSystem2

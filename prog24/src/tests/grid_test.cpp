@@ -13,25 +13,25 @@ TEST_CASE("simple test grid", "[simple_grid_test]")
     VesselGraph gr1(node, ed);
     GraphGrid grid1(gr1, 0.61);
     CHECK(grid1.n_points() == 2);
-    //CHECK(grid1.n_cells() == 1);
+    // CHECK(grid1.n_cells() == 1);
     CHECK(grid1.points_by_edge(0)[1] == 1);
-    //CHECK(grid1.find_cell_length(0) == 0.5);
+    // CHECK(grid1.find_cell_length(0) == 0.5);
     node = {{0}, {0}};
     ed = {3.0};
     VesselGraph gr2(node, ed);
     GraphGrid grid2(gr2, 0.5);
     CHECK(grid2.n_points() == 7);
-   // CHECK(grid2.n_cells() == 6);
+    // CHECK(grid2.n_cells() == 6);
     CHECK(grid2.points_by_edge(0)[1] == 2);
-    //CHECK(grid2.find_cell_length(0) == 0.5);
+    // CHECK(grid2.find_cell_length(0) == 0.5);
     node = {{0}, {0, 1, 2}, {1}, {2}};
     ed = {3.0, 0.5, 10.0};
     VesselGraph gr3(node, ed);
     GraphGrid grid3(gr3, 0.6);
     CHECK(grid3.n_points() == 24);
-    //CHECK(grid3.n_cells() == 23);
+    // CHECK(grid3.n_cells() == 23);
     CHECK(grid3.points_by_edge(0)[1] == 4);
-    //CHECK(grid3.find_cell_length(0) == 0.6);
+    // CHECK(grid3.find_cell_length(0) == 0.6);
 }
 
 TEST_CASE("test grid", "[grid_test]")
@@ -47,6 +47,6 @@ TEST_CASE("test grid", "[grid_test]")
     CHECK(grid1.tab_point_cell(2).size() == 4);
     CHECK(grid1.tab_point_cell(0)[1] == 5);
     CHECK(grid1.tab_point_cell(12).size() == 2);
-    //CHECK(grid1.find_edge_by_cell(7) == 1);
-    //CHECK_THROWS(grid1.find_edge_by_cell(55));
+    // CHECK(grid1.find_edge_by_cell(7) == 1);
+    // CHECK_THROWS(grid1.find_edge_by_cell(55));
 }

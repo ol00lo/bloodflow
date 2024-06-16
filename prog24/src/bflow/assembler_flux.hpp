@@ -1,7 +1,7 @@
 #ifndef ASSEMBLER_FLUX_HPP
 #define ASSEMBLER_FLUX_HPP
-#include"bflow/fem_grid.hpp"
-#include"bflow/flux_calculator.hpp"
+#include "bflow/fem_grid.hpp"
+#include "bflow/flux_calculator.hpp"
 #include <memory>
 using namespace bflow;
 
@@ -27,8 +27,9 @@ public:
     std::vector<double> pressure(const std::vector<double>& area = std::vector<double>()) const;
     std::vector<double> w1() const;
     std::vector<double> w2() const;
-    std::vector<double> area(std::vector<double> area) const;
+    std::vector<double> normalized_area(const std::vector<double>& area = std::vector<double>()) const;
     void reset_flux_calculator(size_t icell, std::shared_ptr<IUpwindFluxCalculator> calc);
+
 private:
     const FemGrid& _grid;
     std::vector<const ProblemData*> _data, _data_by_node;

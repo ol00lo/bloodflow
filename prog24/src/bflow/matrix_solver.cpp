@@ -1,11 +1,11 @@
 #include "matrix_solver.hpp"
-#include <sstream>
 #include <amgcl/amg.hpp>
 #include <amgcl/backend/builtin.hpp>
 #include <amgcl/coarsening/runtime.hpp>
 #include <amgcl/make_solver.hpp>
 #include <amgcl/relaxation/runtime.hpp>
 #include <amgcl/solver/runtime.hpp>
+#include <sstream>
 
 using namespace bflow;
 

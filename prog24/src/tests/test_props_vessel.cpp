@@ -20,46 +20,11 @@ double q_inflow1(double t)
 double p_inflow2(double t)
 {
     constexpr double T = 0.33;
-     //constexpr double T = 0.01;
+    // constexpr double T = 0.01;
     return (T / 2 - t > 0) ? 2000 * sin(2 * ProblemData::pi * t / T) : 0;
 };
-void time_value_vtk(double tau, const std::vector<double>& v, std::string filename)
-{
-    std::ofstream fs(filename);
-    size_t n_nodes = v.size();
-    size_t n_cells = v.size() - 1;
-    fs << "# vtk DataFile Version 3.0" << std::endl;
-    fs << "DG" << std::endl;
-    fs << "ASCII" << std::endl;
-    fs << "DATASET UNSTRUCTURED_GRID" << std::endl;
-    fs << "POINTS " << n_nodes << " double" << std::endl;
-    for (size_t i = 0; i < n_nodes; ++i)
-    {
-        fs << i * tau << " 0 0" << std::endl;
-    }
-
-    // Cells
-    fs << "CELLS  " << n_cells << "   " << 3 * n_cells << std::endl;
-    for (size_t ielem = 0; ielem < n_cells; ++ielem)
-    {
-        fs << 2 << " " << ielem << " " << ielem + 1 << std::endl;
-    }
-    fs << "CELL_TYPES  " << n_cells << std::endl;
-    for (size_t i = 0; i < n_cells; ++i)
-        fs << 3 << std::endl;
-
-    // Data
-    fs << "POINT_DATA " << n_nodes << std::endl;
-    fs << "SCALARS area  double 1" << std::endl;
-    fs << "LOOKUP_TABLE default" << std::endl;
-    for (size_t i = 0; i < n_nodes; ++i)
-    {
-        fs << v[i] << std::endl;
-    }
-    fs.close();
-}
 } // namespace
- 
+
 TEST_CASE("Single vessel, different beta properties", "[2props-vessel]")
 {
     ProblemData data1;
@@ -308,7 +273,7 @@ TEST_CASE("Single vessel, different beta properties, power==2, unstable", "[2pro
     GraphGrid grid1(gr1, L / 3 / k3, 2);
     FemGrid grid(grid1);
     std::vector<int> cell_types(grid.n_elements(), 1);
-    for (size_t i = 1*k3; i < 2 * k3; ++i)
+    for (size_t i = 1 * k3; i < 2 * k3; ++i)
     {
         cell_types[i] = 2;
     }
@@ -355,7 +320,7 @@ TEST_CASE("Single vessel, different beta properties, power==2, unstable", "[2pro
 
     AmgcMatrixSolver slv(10'000, 1e-12);
     NonstatGridSaver saver(grid1, generate_nodes_coo(gr1), "bebe");
-    auto save_fields = [&](){
+    auto save_fields = [&]() {
         saver.new_time_step(time);
         saver.save_vtk_point_data(area, "area");
         saver.save_vtk_point_data(velocity, "velocity");
@@ -412,8 +377,8 @@ TEST_CASE("Single vessel, different beta properties, power==2, unstable", "[2pro
         }
 
         time += tau;
-        //std::cout << "TIME=" << time;
-        //std::cout << "  P=" << p_inflow2(time) << std::endl;
+        // std::cout << "TIME=" << time;
+        // std::cout << "  P=" << p_inflow2(time) << std::endl;
 
         double err_a = 1e6;
         double err_u = 1e6;
@@ -499,7 +464,7 @@ TEST_CASE("Single vessel, different beta properties, power==2, unstable", "[2pro
         if (t > save_tau - 1e-6)
         {
             t = 0;
-            save_fields();    
+            save_fields();
         }
         monitor1.push_back(pressure[monitoring_node1]);
         monitor2.push_back(pressure[monitoring_node2]);

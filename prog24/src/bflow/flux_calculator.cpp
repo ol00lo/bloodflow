@@ -14,6 +14,12 @@ void ProblemData::recompute()
     visc_coef = -2 * (profile_order + 2) * mu * pi / profile_order / rho;
 }
 
+void ProblemData::report() const
+{
+    double c0 = sqrt(beta / 2 / rho) * std::pow(area0, 0.25);
+    std::cout << "C0 = " << c0 << std::endl;
+}
+
 // p(a)
 double ProblemData::pressure(double area) const
 {
@@ -85,11 +91,11 @@ std::array<double, 2> InflowQFluxCalculator::NonlinearSystem::f(double area, dou
 
 std::array<double, 4> InflowQFluxCalculator::NonlinearSystem::jac(double area, double velo) const
 {
-    return {velo, area, -0.25 * _mult* pow(area, -0.75), 1};
+    return {velo, area, -0.25 * _mult * pow(area, -0.75), 1};
 }
 
 void InflowPFluxCalculator_NonReflecting::compute(const std::vector<double>& area, const std::vector<double>& velocity,
-             std::vector<ElementBoundaryFluxes>& fluxes)
+                                                  std::vector<ElementBoundaryFluxes>& fluxes)
 {
     double p = _getp();
     // double w2_upw = _getw2();
@@ -107,7 +113,7 @@ void InflowPFluxCalculator_NonReflecting::compute(const std::vector<double>& are
 }
 
 void InflowPFluxCalculator::compute(const std::vector<double>& area, const std::vector<double>& velocity,
-             std::vector<ElementBoundaryFluxes>& fluxes)
+                                    std::vector<ElementBoundaryFluxes>& fluxes)
 {
     double p = _getp();
     double w2_upw = _data.w2(area[_node_right], velocity[_node_right]);
@@ -125,7 +131,7 @@ void InflowPFluxCalculator::compute(const std::vector<double>& area, const std::
 }
 
 void InflowW1FluxCalculator::compute(const std::vector<double>& area, const std::vector<double>& velocity,
-             std::vector<ElementBoundaryFluxes>& fluxes)
+                                     std::vector<ElementBoundaryFluxes>& fluxes)
 {
     double w1_upw = _getw1();
     double w2_upw = _data.w2(area[_node_right], velocity[_node_right]);
@@ -267,26 +273,26 @@ void Junction3FluxCalculator::compute(const std::vector<double>& area, const std
                                       std::vector<ElementBoundaryFluxes>& fluxes)
 {
     _THROW_NOT_IMP_;
-    //double w1_upw = _data1.w1(area[_node_left1], velocity[_node_left1]);
-    //double w2_upw = _data2.w1(area[_node_left2], velocity[_node_left2]);
-    //double w3_upw = _data2.w2(area[_node_right], velocity[_node_right]);
+    // double w1_upw = _data1.w1(area[_node_left1], velocity[_node_left1]);
+    // double w2_upw = _data2.w1(area[_node_left2], velocity[_node_left2]);
+    // double w3_upw = _data2.w2(area[_node_right], velocity[_node_right]);
 
     //_sys.set_ww(w1_upw, w2_upw, w3_upw);
-    //solve_nonlinear_system(_sys, _area1_upw, _velo1_upw, _area2_upw, _velo2_upw, _area3_upw, _velo3_upw, 1e-12);
+    // solve_nonlinear_system(_sys, _area1_upw, _velo1_upw, _area2_upw, _velo2_upw, _area3_upw, _velo3_upw, 1e-12);
 
-    //double fa1 = _data1.flux_a(_area1_upw, _velo1_upw);
-    //double fu1 = _data1.flux_u(_area1_upw, _velo1_upw);
-    //double fa2 = _data2.flux_a(_area2_upw, _velo2_upw);
-    //double fu2 = _data2.flux_u(_area2_upw, _velo2_upw);
-    //double fa3 = _data2.flux_a(_area3_upw, _velo3_upw);
-    //double fu3 = _data2.flux_u(_area3_upw, _velo3_upw);
+    // double fa1 = _data1.flux_a(_area1_upw, _velo1_upw);
+    // double fu1 = _data1.flux_u(_area1_upw, _velo1_upw);
+    // double fa2 = _data2.flux_a(_area2_upw, _velo2_upw);
+    // double fu2 = _data2.flux_u(_area2_upw, _velo2_upw);
+    // double fa3 = _data2.flux_a(_area3_upw, _velo3_upw);
+    // double fu3 = _data2.flux_u(_area3_upw, _velo3_upw);
 
-    //fluxes[_cell_left1].a_x1 = fa1;
-    //fluxes[_cell_left2].a_x1 = fa2;
-    //fluxes[_cell_right].a_x0 = fa3;
-    //fluxes[_cell_left1].u_x1 = fu1;
-    //fluxes[_cell_left2].u_x1 = fu2;
-    //fluxes[_cell_right].u_x0 = fu3;
+    // fluxes[_cell_left1].a_x1 = fa1;
+    // fluxes[_cell_left2].a_x1 = fa2;
+    // fluxes[_cell_right].a_x0 = fa3;
+    // fluxes[_cell_left1].u_x1 = fu1;
+    // fluxes[_cell_left2].u_x1 = fu2;
+    // fluxes[_cell_right].u_x0 = fu3;
 }
 
 Junction3FluxCalculator::NonlinearSystem::NonlinearSystem(double mult1, double mult2, double mult3,

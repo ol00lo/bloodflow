@@ -147,25 +147,24 @@ std::vector<Point2> bflow::generate_points_coo(const GraphGrid& grid, const std:
         std::vector<int> points_by_edge = grid.points_by_edge(iedge);
         std::array<int, 2> edge_nodes = grid.find_node_by_edge(iedge);
         std::array<int, 2> p_nodes = grid.find_points_by_edge(iedge);
-        points_coo[edge_nodes[0]]=nodes_coo[p_nodes[0]];
+        points_coo[edge_nodes[0]] = nodes_coo[p_nodes[0]];
         int n_edge_cells = points_by_edge.size() - 1;
         int i = 1;
-        auto ipoint = nodes_by_edge.begin()+1;
-        while (*ipoint!=edge_nodes.back())
+        auto ipoint = nodes_by_edge.begin() + 1;
+        while (*ipoint != edge_nodes.back())
         {
             Point2 new_point;
             double w = (double)i / n_edge_cells;
             new_point.x = (1 - w) * nodes_coo[p_nodes[0]].x + w * nodes_coo[p_nodes[1]].x;
             new_point.y = (1 - w) * nodes_coo[p_nodes[0]].y + w * nodes_coo[p_nodes[1]].y;
-            points_coo[*ipoint]=new_point;
-            points_coo[*(ipoint+1)]=new_point;
-            auto x =
-                find_coo(points_coo[*(ipoint - 1)], points_coo[*ipoint], grid.n_midnodes);
-            for (int j = 0; j < grid.n_midnodes-1; j++)
+            points_coo[*ipoint] = new_point;
+            points_coo[*(ipoint + 1)] = new_point;
+            auto x = find_coo(points_coo[*(ipoint - 1)], points_coo[*ipoint], grid.n_midnodes);
+            for (int j = 0; j < grid.n_midnodes - 1; j++)
             {
                 added.push_back(x[j]);
             }
-            ipoint+=2;
+            ipoint += 2;
             i++;
         }
         points_coo[edge_nodes[1]] = nodes_coo[p_nodes[1]];
@@ -177,7 +176,7 @@ std::vector<Point2> bflow::generate_points_coo(const GraphGrid& grid, const std:
         for (auto x : added)
         {
             ipoint++;
-            points_coo[*ipoint]=x;
+            points_coo[*ipoint] = x;
         }
     }
     return points_coo;
@@ -253,7 +252,7 @@ void NonstatGridSaver::new_time_step(double t)
     std::ostringstream fn;
     _times.push_back(t);
 
-    fn << _file_name<<"_"<<std::setfill('0') << std::setw(4) << _files_count << ".vtk";
+    fn << _file_name << "_" << std::setfill('0') << std::setw(4) << _files_count << ".vtk";
     _files_count++;
     _vtk.save_area(fn.str());
 
@@ -301,4 +300,40 @@ void NonstatGridSaver::add_in_series() const
     ofs << print_files();
     ofs << "  ]" << std::endl;
     ofs << "}" << std::endl;
+}
+
+void bflow::time_value_vtk(double tau, const std::vector<double>& v, std::string filename)
+{
+    std::ofstream fs(filename);
+    size_t n_nodes = v.size();
+    size_t n_cells = v.size() - 1;
+    fs << "# vtk DataFile Version 3.0" << std::endl;
+    fs << "DG" << std::endl;
+    fs << "ASCII" << std::endl;
+    fs << "DATASET UNSTRUCTURED_GRID" << std::endl;
+    fs << "POINTS " << n_nodes << " double" << std::endl;
+    for (size_t i = 0; i < n_nodes; ++i)
+    {
+        fs << i * tau << " 0 0" << std::endl;
+    }
+
+    // Cells
+    fs << "CELLS  " << n_cells << "   " << 3 * n_cells << std::endl;
+    for (size_t ielem = 0; ielem < n_cells; ++ielem)
+    {
+        fs << 2 << " " << ielem << " " << ielem + 1 << std::endl;
+    }
+    fs << "CELL_TYPES  " << n_cells << std::endl;
+    for (size_t i = 0; i < n_cells; ++i)
+        fs << 3 << std::endl;
+
+    // Data
+    fs << "POINT_DATA " << n_nodes << std::endl;
+    fs << "SCALARS area  double 1" << std::endl;
+    fs << "LOOKUP_TABLE default" << std::endl;
+    for (size_t i = 0; i < n_nodes; ++i)
+    {
+        fs << v[i] << std::endl;
+    }
+    fs.close();
 }

@@ -1,8 +1,8 @@
 #include "time_series_writer.hpp"
 #include "ghc/filesystem.hpp"
+#include <cmath>
 #include <iomanip>
 #include <sstream>
-#include <cmath>
 
 namespace fs = ghc::filesystem;
 void create_directory(std::string path, bool purge)

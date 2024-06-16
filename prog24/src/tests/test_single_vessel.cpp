@@ -17,7 +17,7 @@ double q_inflow1(double t)
 {
     return 1e-6 * exp(-1e4 * (t - 0.05) * (t - 0.05));
 };
-}
+} // namespace
 TEST_CASE("Single vessel, inviscid2, ver1", "[single-vessel-inviscid-explicit1]")
 {
     ProblemData data;
@@ -26,7 +26,7 @@ TEST_CASE("Single vessel, inviscid2, ver1", "[single-vessel-inviscid-explicit1]"
     std::vector<std::vector<int>> node = {{0}, {0}};
     std::vector<double> ed = {L};
     VesselGraph gr1(node, ed);
-    GraphGrid grid1(gr1, L/100, 1);
+    GraphGrid grid1(gr1, L / 100, 1);
     FemGrid grid(grid1);
     double tau = grid.h(0) / 100;
     std::vector<ElementBoundaryFluxes> upwind_fluxes(grid.n_elements());
@@ -43,7 +43,8 @@ TEST_CASE("Single vessel, inviscid2, ver1", "[single-vessel-inviscid-explicit1]"
     saver.save_vtk_point_data(pressure, "pressure");
 
     std::vector<std::shared_ptr<IUpwindFluxCalculator>> upwind_flux_calculator(grid.n_points());
-    upwind_flux_calculator[0].reset(new InflowQFluxCalculator(grid, data, [&time]() { return q_inflow1(time); }, 0));
+    upwind_flux_calculator[0].reset(new InflowQFluxCalculator(
+        grid, data, [&time]() { return q_inflow1(time); }, 0));
     for (size_t i = 1; i < grid.n_points() - 1; ++i)
     {
         upwind_flux_calculator[i].reset(new InternalFluxCalculator(grid, data, i - 1, i));
@@ -109,7 +110,7 @@ TEST_CASE("Single vessel, inviscid2, ver1", "[single-vessel-inviscid-explicit1]"
             pressure[i] = data.pressure(area[i]);
         }
         t += tau;
-        if (t > 0.005-1e-6)
+        if (t > 0.005 - 1e-6)
         {
             t = 0;
             saver.new_time_step(time);
@@ -249,10 +250,10 @@ TEST_CASE("Single vessel, inviscid, implicit", "[single-vessel-inviscid-implicit
             // break conditions
             if (it > 0)
             {
-                //std::cout << err_u << " " << err_a << std::endl;
+                // std::cout << err_u << " " << err_a << std::endl;
                 if (std::max(err_u, err_a) < 1e-10)
                 {
-                    //std::cout << "converged in " << it << " iterations" << std::endl;
+                    // std::cout << "converged in " << it << " iterations" << std::endl;
                     break;
                 }
                 else if (it == iter_max - 1)
@@ -268,7 +269,7 @@ TEST_CASE("Single vessel, inviscid, implicit", "[single-vessel-inviscid-implicit
             pressure[i] = data.pressure(area[i]);
         }
         t += tau;
-        if (t>0.005-1e-6)
+        if (t > 0.005 - 1e-6)
         {
             t = 0;
             saver.new_time_step(time);

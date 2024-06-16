@@ -13,7 +13,7 @@ void warning_message(double cur_err, double max_err, size_t maxit)
     std::cout << "till e = " << max_err << ". ";
     std::cout << "Norm=" << cur_err << std::endl;
 }
-}
+} // namespace
 
 void solve_nonlinear_system(const INonlinearSystem2& sys, double& x1, double& x2, double eps, size_t maxit)
 {

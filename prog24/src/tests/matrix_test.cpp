@@ -1,5 +1,5 @@
-#include "catch.hpp"
 #include "bflow/debug/printer.hpp"
+#include "catch.hpp"
 #include <sstream>
 
 using namespace bflow;
@@ -106,6 +106,6 @@ TEST_CASE("test sparse matrix 3", "[sparse_matrix3]")
 
     CsrMatrix cmat({0}, {}, {});
     CHECK(cmat.n_rows() == 0);
-    CHECK_THROWS(cmat.value(0,0));
+    CHECK_THROWS(cmat.value(0, 0));
     CHECK_THROWS(cmat.is_in_stencil(0, 0));
 }

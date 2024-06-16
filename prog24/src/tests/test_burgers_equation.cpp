@@ -1,8 +1,8 @@
+#include "bflow/fem_grid.hpp"
 #include "bflow/macros.hpp"
 #include "bflow/matrix.hpp"
 #include "bflow/matrix_solver.hpp"
 #include "bflow/time_series_writer.hpp"
-#include "bflow/fem_grid.hpp"
 #include "bflow/vtk.hpp"
 #include "catch.hpp"
 #include <fstream>
