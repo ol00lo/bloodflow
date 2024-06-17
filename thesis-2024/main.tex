@@ -27,12 +27,30 @@
   linkcolor=blue,
   linktoc=page,
 ]{hyperref}
+% cleverref
+\usepackage{cleveref}
+\newcommand{\crefrangeconjunction}{~--~}
+\newcommand{\crefpairconjunction}{, }
+\newcommand{\creflastconjunction}{, }
+\crefname{equation}{}{}
+% glossaries
+\usepackage[automake,symbols,nogroupskip,sort=use]{glossaries-extra}
+%\usepackage{array}
+%\usepackage{booktabs}
+% figures
+\usepackage{subcaption}
 % tilde symbol
 \usepackage{textcomp}
 \renewcommand{\texttilde}{\raisebox{0.5ex}{\texttildelow}}
 % Reynolds number
 \newcommand{\Ren}{\mathrm{Re}}
 \renewcommand{\vec}[1]{\boldsymbol{\rm #1}}
+% 
+\newcommand{\dfr}[2]{\frac{\partial #1}{\partial #2}}
+\newcommand{\dfrq}[2]{\frac{\partial^2 #1}{\partial #2^2}}
+\newcommand{\dsfr}[2]{\left.\partial #1\middle/\partial#2\right.}
+
+\makeglossaries
 
 \begin{document}
 
@@ -43,8 +61,15 @@
 \newpage
 
 \include{intro}
+\include{prob-definition}
+%\include{numerical-method}
+\include{results}
+\include{outro}
 
 \newpage
-\printbibliography
+\printglossary[type=symbols,style=long3col,title={Условные обозначения}]
+
+\newpage
+\printbibliography[heading=bibintoc,title={Список литературы}]
 
 \end{document}

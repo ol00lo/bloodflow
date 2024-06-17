@@ -1,0 +1,177 @@
+\section{Верификация и результаты расчётов}
+
+\glsxtrnewsymbol[description={частота сердцебиения, [ударов/мин]}]{bpm}{\ensuremath{bpm}}
+
+\subsection{Течение в однородном одиночном сосуде}
+
+\begin{equation}
+\label{eq:p_peak_visc}
+p_{max, visc}(x) = p_{max} \exp\left(-\frac{(\zeta + 2)\pi \mu x}{\rho c_0 A}\right)
+\end{equation}
+
+\begin{figure}[h!]
+\begin{subfigure}{0.5\linewidth}\centering
+\includegraphics[width=0.9\linewidth]{problem2_article.pdf}
+\caption{Результаты из~\cite{boileau:2015}}\label{fig:prob2_a}
+\end{subfigure}%
+\begin{subfigure}{0.5\linewidth}\centering
+\includegraphics[width=0.9\linewidth]{problem2_theta05.pdf}
+\caption{$\theta=0.5$}\label{fig:prob2_b}
+\end{subfigure} \\
+\hfill \\
+\begin{subfigure}{0.5\linewidth}\centering
+\includegraphics[width=0.9\linewidth]{problem2_theta1.pdf}
+\caption{$\theta=1$}\label{fig:prob2_c}
+\end{subfigure}%
+\begin{subfigure}{0.5\linewidth}\centering
+\includegraphics[width=0.9\linewidth]{problem2_theta0.pdf}
+\caption{$\theta=0$}\label{fig:prob2_d}
+\end{subfigure}%
+\caption{Положение скачка давления в различные моменты времени: зелёная линия -- расчёт без вязкости, красная линия -- расчёт с $\mu$=4мПа,
+чёрный пунктир -- падение пика давления с продвижением фронта \cref{eq:p_peak_visc}}\label{fig:prob2}
+\end{figure}
+
+
+\subsection{Течение в одиночном сосуде с разрывными свойствами}
+\subsubsection{Сосуд со вставкой}
+
+\begin{figure}[h!]
+\begin{subfigure}{0.5\linewidth}\centering
+\includegraphics[width=0.9\linewidth]{problem3_P.pdf}
+\caption{Контрольная $P$ точка перед вставкой}\label{fig:prob3_a}
+\end{subfigure}%
+\begin{subfigure}{0.5\linewidth}\centering
+\includegraphics[width=0.9\linewidth]{problem3_D.pdf}
+\caption{Контрольная точка $D$ в вставке}\label{fig:prob3_b}
+\end{subfigure} \\
+\hfill \\
+\begin{subfigure}{0.5\linewidth}\centering
+\includegraphics[width=0.9\linewidth]{problem3_M.pdf}
+\caption{Контрольная точка $M$ после вставки}\label{fig:prob3_c}
+\end{subfigure}%
+\caption{Сравнение значения давления в контрольных точках. Сплошная линия -- наш расчёт, пунктирная -- результаты~\cite{Sherwin2003}}\label{fig:prob3}
+\end{figure}
+
+\subsubsection{Влияние смены свойств стенок сосуда на решение задачи}
+TODO
+
+\subsection{Течение в сосуде с разветвлением}
+TODO
+
+\subsection{Течение в системе сосудов}
+Для иллюстрации применения численного метода
+рассмотрим задачу о течении в системе из семи сосудов, представленных на рис.~\ref{fig:seven_vessel}.
+\begin{figure}[h!]
+\centering
+\includegraphics[width=0.6\linewidth]{seven_vessel.pdf}
+\caption{Система из семи сосудов}\label{fig:seven_vessel}
+\end{figure}%
+
+Сосуды поделены на три группы: в группе $1$ один крупный сосуд,
+ в группе $2$ два средних сосуда и в группе $3$ четыре малых сосуда.
+Базовые свойства этих сосудов приведены в таблице \cref{tab:prob5_vessel}.
+
+\begin{equation}
+\label{tab:prob5_vessel}
+\begin{array}{l|c|c|c}
+\text{параметр}  & \text{сосуд 1} & \text{сосуды 2} & \text{сосуды 3}\\
+\hline
+\text{длина, м} & 1.0 & 0.8 & 0.5\\
+\hline
+R\text{, мм} & 5.0 & 4.0 & 3.0\\
+\hline
+E\text{, МПа} & \multicolumn{3}{c}{1.0}\\
+\hline
+h\text{, мм} & \multicolumn{3}{c}{0.15}\\
+\hline
+\rho\text{, кг/м\textsuperscript{3}} & \multicolumn{3}{c}{1050}\\
+\hline
+\mu\text{, Па с} & \multicolumn{3}{c}{0}\\
+\hline
+\end{array}
+\end{equation}
+
+Упругие свойства нижнего из промежуточных сосудов (обозначен $2.2$ на рисунке~\ref{fig:seven_vessel})
+в зависимости от варианта расчёта изменяются согласно вариантам, представленным в таблице~\ref{tab:prob5_case}.
+\begin{equation}
+\label{tab:prob5_case}
+\begin{array}{l|c|c|c|c}
+\text{параметр}  & \text{вариант I} & \text{вариант II} & \text{вариант III} & \text{вариант IV}\\
+\hline
+R\text{, мм} & 4.0 & 4.0 & 4.0/\sqrt{2} & 4.0/\sqrt{2} \\
+\hline
+E\text{, МПа} & 1.0 & 10 & 1 & 10 \\
+\hline
+\end{array}
+\end{equation}
+Такие изменения характерны для склеротических поражений сосудов, при которых
+увеличивается жёсткость стенки и уменьшается эффективный радиус сосуда.
+Вариант I будем считать базовым, в варианте II увеличен модуль упругости сосуда,
+в варианте III уменьшен радиус сосуда, вариант IV является суммой изменений из вариантов II и III.
+
+На входе устанавливается периодическое значение расхода $q_{in}(t)$
+с максимальным значением в $20$мл/сек.
+Рассматривается два периода, соответствующие частоте сердцебиения \gls{bpm} в 60 (спокойный пульс) и 180 (высокий пульс) ударов в минуту.
+В качестве выходного параметра мониторятся выходное значение расхода в сечениях, обозначенных на рис.~\ref{fig:seven_vessel} как $S_1$ (неповрежденная сторона системы)
+и $S_2$ (повреждённая сторона системы).
+
+Результаты для значения $bpm=60$ приведены на рис.~\ref{fig:prob5_q1}, а для $bpm=180$ -- на рис.~\ref{fig:prob5_q2}.
+На рис.~\ref{fig:prob5_time} приведено значение скорости течения на различные моменты времени.
+Видно, что оба типа повреждения значительно уменьшают количество
+жидкости, протекающей через повреждённую сторону, при этом также происходит
+изменения величины расхода и для неповреждённой стороны. В частности, там наблюдаются потоки, текущие в обратном направлении ($u<0$).
+Для $bpm=180$ качественная картина не меняется, но при этом перепады значений расходов между сечениями $S_1$ и $S_2$
+кратно увеличивается.
+Из этого можно сделать вывод, что негативные последствия, связанные с нарушением эластичности стенок сосудов, проявляет себя сильнее при
+высоком пульсе.
+
+\begin{figure}[h!]
+\begin{subfigure}{0.5\linewidth}\centering
+\includegraphics[width=0.9\linewidth]{q1_eq.pdf}
+\caption{Вариант I}\label{fig:prob5_q1_eq}
+\end{subfigure}%
+\begin{subfigure}{0.5\linewidth}\centering
+\includegraphics[width=0.9\linewidth]{q1_e10.pdf}
+\caption{Вариант II}\label{fig:prob5_q1_e10}
+\end{subfigure} \\
+\hfill \\
+\begin{subfigure}{0.5\linewidth}\centering
+\includegraphics[width=0.9\linewidth]{q1_a2.pdf}
+\caption{Вариант III}\label{fig:prob5_q1_a2}
+\end{subfigure}%
+\begin{subfigure}{0.5\linewidth}\centering
+\includegraphics[width=0.9\linewidth]{q1_e10a2.pdf}
+\caption{Вариант IV}\label{fig:prob5_a1_e10a2}
+\end{subfigure}%
+\caption{Значение расходов через сечения $S_1$ (красная линия) и $S_2$ (синяя линия) для различных способов повреждения сосудов, ведущих к $S_2$. Частота -- $bpm=60$}
+\label{fig:prob5_q1}
+\end{figure}
+
+\begin{figure}[h!]
+\begin{subfigure}{0.5\linewidth}\centering
+\includegraphics[width=0.9\linewidth]{q2_eq.pdf}
+\caption{Вариант I}\label{fig:prob5_q2_eq}
+\end{subfigure}%
+\begin{subfigure}{0.5\linewidth}\centering
+\includegraphics[width=0.9\linewidth]{q2_e10.pdf}
+\caption{Вариант II}\label{fig:prob5_q2_e10}
+\end{subfigure} \\
+\hfill \\
+\begin{subfigure}{0.5\linewidth}\centering
+\includegraphics[width=0.9\linewidth]{q2_a2.pdf}
+\caption{Вариант III}\label{fig:prob5_q2_a2}
+\end{subfigure}%
+\begin{subfigure}{0.5\linewidth}\centering
+\includegraphics[width=0.9\linewidth]{q2_e10a2.pdf}
+\caption{Вариант IV}\label{fig:prob5_a2_e10a2}
+\end{subfigure}%
+\caption{Значение расходов через сечения $S_1$ (красная линия) и $S_2$ (синяя линия) для различных способов повреждения сосудов, ведущих к $S_2$. Частота -- $bpm=180$}
+\label{fig:prob5_q2}
+\end{figure}
+
+\begin{figure}[h!]
+\centering
+\includegraphics[width=1.0\linewidth]{problem5_time.pdf}
+\caption{Значение скорости течения $u$ на различные моменты времени при частоте $bpm=180$. Слева вариант I, справа вариант IV}\label{fig:prob5_time}
+
+\end{figure}
