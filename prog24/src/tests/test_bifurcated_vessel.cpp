@@ -25,6 +25,9 @@ TEST_CASE("Bifurcated vessel", "[bifurcated-vessel]")
     data2.h = 1;
     data2.E = 3.0 * data1.area0 * 796020 / 4.0 / std::sqrt(ProblemData::pi);
     data2.recompute();
+    data1.report();
+    data2.report();
+    throw;
 
     double time = 0;
     double theta = 0.5;

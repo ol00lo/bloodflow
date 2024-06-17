@@ -56,7 +56,149 @@ p_{max, visc}(x) = p_{max} \exp\left(-\frac{(\zeta + 2)\pi \mu x}{\rho c_0 A}\ri
 TODO
 
 \subsection{Течение в сосуде с разветвлением}
-TODO
+Рассматривается тестовая задача~\cite{Xiu:2007} о течении в разветвлении сосудов.
+Расчётные свойства сосудов до разветвления (сосуд 1) и после разветвления (сосуды 2)
+представлены ниже
+
+\begin{equation}
+\nonumber
+\begin{array}{l|c|c}
+\text{параметр}  & \text{сосуд 1} & \text{сосуды 2}\\
+\hline
+\text{длина, м} & 0.2 & 0.2\\
+\hline
+R\text{, мм} & 5.0 & 5.0/\sqrt{6}\\
+\hline
+E\text{, kПа} & 108 & 264.5\\
+\hline
+h\text{, мм} & \multicolumn{2}{c}{0.1}\\
+\hline
+\rho\text{, кг/м\textsuperscript{3}} & \multicolumn{2}{c}{1000}\\
+\hline
+\mu\text{, Па с} & \multicolumn{2}{c}{0}\\
+\hline
+\end{array}
+\end{equation}
+
+В качестве граничного условия использовалось фиксированное входное значение
+площади поперечного сечения $a = A$ и зависимость скорости от времени вида:
+\begin{equation}
+\nonumber
+u_{in}(t) = 0.01\exp\left(-5000(t-0.05)^2\right).
+\end{equation}
+Таким образом, на вход подаётся единичная волна с пиковым
+значением скорости $0.01$ м/с в момент времени $0.05$ с.
+
+Расчёты проедены на сетке из 120 конечных элементов
+(что соответствовало шагу по пространству $h_i = 0.005$ м)
+с шагом по времени $\tau = 2.5\cdot10^{-4}$ с.
+При выбранных параметрах сосудов скорость возмущений 
+составляла $c_0=1.2$ м/с и $c_0 = 2.94$ м/с
+для первого и вторых сосудов соответственно.
+То есть число Куранта, рассчитанное по скорости $c_0$ составляло $\approx0.15$.
+
+
+Продвижение волны давления и скорости представлены на рис.~\ref{fig:prob4_pv}.
+Поступательная волна повышенного давления и скорости
+формируется от входного сечения (рис.~\ref{fig:prob4_pv_a})
+и движется вперёд до точки разветвления (рис.~\ref{fig:prob4_pv_b}).
+В этой точке происходит отражение части волны назад, после чего
+наблюдаются уже две волны (рис.~\ref{fig:prob4_pv_c}):
+поступательная волна продолжает движение по выходным сегментам графа,
+а возвратная волна повышенного давления и пониженной (отрицательной)
+скорости движется к входному сечению.
+
+\begin{figure}[h!]
+\begin{subfigure}{1.0\linewidth}\centering
+\includegraphics[width=0.4\linewidth]{prob4_time/p0.png}
+\includegraphics[width=0.4\linewidth]{prob4_time/v0.png}
+\caption{$t = 0.13$}\label{fig:prob4_pv_a}
+\end{subfigure} \\
+\hfill \\
+\hfill \\
+\begin{subfigure}{1.0\linewidth}\centering
+\includegraphics[width=0.4\linewidth]{prob4_time/p1.png}
+\includegraphics[width=0.4\linewidth]{prob4_time/v1.png}
+\caption{$t = 0.22$}\label{fig:prob4_pv_b}
+\end{subfigure}\\
+\hfill \\
+\hfill \\
+\begin{subfigure}{1.0\linewidth}\centering
+\includegraphics[width=0.4\linewidth]{prob4_time/p2.png}
+\includegraphics[width=0.4\linewidth]{prob4_time/v2.png}
+\caption{$t=0.3$}\label{fig:prob4_pv_c}
+\end{subfigure}\\
+\caption{Значение давления (слева) и скорости (справа) на различные моменты времени}\label{fig:prob4_pv}
+\end{figure}
+
+\begin{figure}[h!]
+\begin{subfigure}{1.0\linewidth}\centering
+\includegraphics[width=0.4\linewidth]{prob4_time/w1_0.png}
+\includegraphics[width=0.4\linewidth]{prob4_time/w2_0.png}
+\caption{$t = 0.13$}\label{fig:prob4_w12_a}
+\end{subfigure} \\
+\hfill \\
+\hfill \\
+\begin{subfigure}{1.0\linewidth}\centering
+\includegraphics[width=0.4\linewidth]{prob4_time/w1_1.png}
+\includegraphics[width=0.4\linewidth]{prob4_time/w2_1.png}
+\caption{$t = 0.22$}\label{fig:prob4_w12_b}
+\end{subfigure}\\
+\hfill \\
+\hfill \\
+\begin{subfigure}{1.0\linewidth}\centering
+\includegraphics[width=0.4\linewidth]{prob4_time/w1_2.png}
+\includegraphics[width=0.4\linewidth]{prob4_time/w2_2.png}
+\caption{$t=0.3$}\label{fig:prob4_w12_c}
+\end{subfigure}\\
+\caption{Значение переменной $w_1$ (слева) и $w_2$ (справа) на различные моменты времени}\label{fig:prob4_w12}
+\end{figure}
+
+Чтобы отделить поступательные волны от возвратных
+был произведён пересчёт расчётных параметров
+в переменные Римана $w_1$, $w_2$.
+Их эволюция представлена на рис.~\ref{fig:prob4_w12}.
+Как и следует из математического смысла этих переменных, каждая
+из них содержит волны только одного направления.
+Видно, что волна $w_2$ формируется
+в момент, когда поступательная волна $w_1$
+достигает точки разветвления (рис.~\ref{fig:prob4_w12_b}),
+после чего волны $w_1$  и $w_2$ двигаются в противоположенных направлениях (рис.~\ref{fig:prob4_w12_c}).
+
+\begin{figure}[h!]
+\begin{subfigure}{0.5\linewidth}\centering
+\includegraphics[width=0.9\linewidth]{problem4_pA1.pdf}
+%\caption{}\label{fig:prob4_a}
+\end{subfigure}%
+\begin{subfigure}{0.5\linewidth}\centering
+\includegraphics[width=0.9\linewidth]{problem4_pB1.pdf}
+%\caption{}\label{fig:prob4_b}
+\end{subfigure} \\
+\hfill \\
+\begin{subfigure}{0.5\linewidth}\centering
+\includegraphics[width=0.9\linewidth]{problem4_pC1.pdf}
+%\caption{}\label{fig:prob4_c}
+\end{subfigure}%
+\begin{subfigure}{0.5\linewidth}\centering
+\includegraphics[width=0.9\linewidth]{problem4_pD1.pdf}
+%\caption{}\label{fig:prob4_d}
+\end{subfigure}\\
+\hfill \\
+\begin{subfigure}{0.5\linewidth}\centering
+\includegraphics[width=0.9\linewidth]{problem4_pE1.pdf}
+%\caption{}\label{fig:prob4_e}
+\end{subfigure}%
+\caption{Сравнение значения давления в контрольных точках. Сплошная линия -- наш расчёт, пунктирная -- результаты~\cite{Xiu:2007}}\label{fig:prob4_pt}
+\end{figure}
+
+Для сравнение полученных в результате наших расчётов данные с результатами из работы~\cite{Xiu:2007} 
+были построены графики значения давления в контрольных точках (расположение контрольных точек смотри на рис.~\ref{fig:prob4_pv_a}).
+Наложение графиков, демонстрирующее хорошее совпадение результатов, представлено на рис.~\ref{fig:prob4_pt}.
+На графиках для точек A и B видно, что через соответствующие контрольные точки проходит
+две волны. Сначала поступательная, потом отражённая возвратная.
+Тут же следует отметить, что отсутствие других возмущений
+говорит о корректной работе неотражающих граничных условий.
+
 
 \subsection{Течение в системе сосудов}
 Для иллюстрации применения численного метода
