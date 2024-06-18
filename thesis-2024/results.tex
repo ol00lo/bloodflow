@@ -111,33 +111,21 @@ p_{max, visc}(x) = p_{max} \exp\left(-\frac{(\zeta + 2)\pi \mu x}{\rho c_0 A}\ri
 \end{figure}
 
 
+\clearpage
 \subsection{Течение в одиночном сосуде с разрывными свойствами}
+\label{sec:problem4}
 %\subsubsection{Сосуд со вставкой}
 
 \begin{figure}[h!]
-\begin{subfigure}{0.5\linewidth}\centering
-\includegraphics[width=0.9\linewidth]{problem3_def.pdf}
+\centering
+\includegraphics[width=0.4\linewidth]{problem3_def.pdf}
 \caption{Cхема сосуда и расположение контрольных точек}\label{fig:prob3_def}
-\end{subfigure}%
-\begin{subfigure}{0.5\linewidth}\centering
-\includegraphics[width=0.9\linewidth]{problem3_P.pdf}
-\caption{Контрольная $P$ точка перед вставкой}\label{fig:prob3_a}
-\end{subfigure}\\
-\par\bigskip % force a bit of vertical whitespace
-\begin{subfigure}{0.5\linewidth}\centering
-\includegraphics[width=0.9\linewidth]{problem3_D.pdf}
-\caption{Контрольная точка $D$ в вставке}\label{fig:prob3_b}
-\end{subfigure}%
-\begin{subfigure}{0.5\linewidth}\centering
-\includegraphics[width=0.9\linewidth]{problem3_M.pdf}
-\caption{Контрольная точка $M$ после вставки}\label{fig:prob3_c}
-\end{subfigure}%
-\caption{Сравнение значения давления в контрольных точках. Сплошная линия -- наш расчёт, пунктирная -- результаты~\cite{Sherwin2003}}\label{fig:prob3}
 \end{figure}
 
 В следующем тесте рассмотрим течение в сосуде, имеющим
 жёсткую вставку, модуль Юнга в которой на два порядка превышает
 значение в остальном сосуде~\cite{Sherwin2003}.
+Схема сосуда и расположение контрольных точек представлены на рисунке~\ref{fig:prob3_def}.
 Использовались следующие параметры расчёта
 \begin{equation}
 \nonumber
@@ -173,6 +161,23 @@ p(t) = \begin{cases}
 Расчёт проводился при выборе $\dx = 0.5$, $\dt = \dx 2\cdot10^{-5} = 10^{-5}$. Такой
 выбор обеспечивал $\CFL=0.1$ для максимального $c_0$.
 
+\begin{figure}[h!]
+\begin{subfigure}{0.5\linewidth}\centering
+\includegraphics[width=0.9\linewidth]{problem3_P.pdf}
+\caption{Контрольная $P$ точка перед вставкой}\label{fig:prob3_a}
+\end{subfigure}
+\begin{subfigure}{0.5\linewidth}\centering
+\includegraphics[width=0.9\linewidth]{problem3_D.pdf}
+\caption{Контрольная точка $D$ в вставке}\label{fig:prob3_b}
+\end{subfigure}\\
+\par\bigskip % force a bit of vertical whitespace
+\begin{subfigure}{0.5\linewidth}\centering
+\includegraphics[width=0.9\linewidth]{problem3_M.pdf}
+\caption{Контрольная точка $M$ после вставки}\label{fig:prob3_c}
+\end{subfigure}%
+\caption{Сравнение значения давления в контрольных точках. Сплошная линия -- наш расчёт, пунктирная -- результаты~\cite{Sherwin2003}}\label{fig:prob3}
+\end{figure}
+
 Результирующие значение давления в контрольных точках сосуда
 представлены на рис.~\ref{fig:prob3} в сравнении с данными~\cite{Sherwin2003}.
 Наблюдается удовлетворительное совпадение полученных кривых.
@@ -191,6 +196,7 @@ p(t) = \begin{cases}
 %\subsubsection{Влияние смены свойств стенок сосуда на решение задачи}
 %TODO
 
+\clearpage
 \subsection{Течение в сосуде с разветвлением}
 Рассматривается тестовая задача~\cite{Xiu:2007} о течении в разветвлении сосудов.
 Расчётные свойства сосудов до разветвления (сосуд 1) и после разветвления (сосуды 2)
@@ -337,6 +343,7 @@ u_{in}(t) = 0.01\exp\left(-5000(t-0.05)^2\right).
 говорит о корректной работе неотражающих граничных условий.
 
 
+\clearpage
 \subsection{Течение в системе сосудов}
 Для иллюстрации применения численного метода
 рассмотрим задачу о течении в системе из семи сосудов, представленных на рис.~\ref{fig:seven_vessel}.
@@ -359,9 +366,9 @@ u_{in}(t) = 0.01\exp\left(-5000(t-0.05)^2\right).
 \hline
 R\text{, мм} & 5.0 & 4.0 & 3.0\\
 \hline
-E\text{, МПа} & \multicolumn{3}{c}{1.0}\\
+E\text{, кПа} & \multicolumn{3}{c}{100}\\
 \hline
-h\text{, мм} & \multicolumn{3}{c}{0.15}\\
+h\text{, мм} & \multicolumn{3}{c}{1.5}\\
 \hline
 \rho\text{, кг/м\textsuperscript{3}} & \multicolumn{3}{c}{1050}\\
 \hline
@@ -370,7 +377,7 @@ h\text{, мм} & \multicolumn{3}{c}{0.15}\\
 \end{array}
 \end{equation}
 
-Упругие свойства нижнего из промежуточных сосудов (обозначен $2.2$ на рисунке~\ref{fig:seven_vessel})
+Упругие свойства нижнего из промежуточных сосудов $2.2$ (на рисунке~\ref{fig:seven_vessel} обозначен красным цветом)
 в зависимости от варианта расчёта изменяются согласно вариантам, представленным в таблице~\ref{tab:prob5_case}.
 \begin{equation}
 \label{tab:prob5_case}
@@ -379,12 +386,12 @@ h\text{, мм} & \multicolumn{3}{c}{0.15}\\
 \hline
 R\text{, мм} & 4.0 & 4.0 & 4.0/\sqrt{2} & 4.0/\sqrt{2} \\
 \hline
-E\text{, МПа} & 1.0 & 10 & 1 & 10 \\
+E\text{, кПа} & 100 & 1000 & 100 & 1000 \\
 \hline
 \end{array}
 \end{equation}
 Такие изменения характерны для склеротических поражений сосудов, при которых
-увеличивается жёсткость стенки и уменьшается эффективный радиус сосуда.
+увеличивается жёсткость стенки и уменьшается эффективный радиус сосуда~\cite{Maurice2004}.
 Вариант I будем считать базовым, в варианте II увеличен модуль упругости сосуда,
 в варианте III уменьшен радиус сосуда, вариант IV является суммой изменений из вариантов II и III.
 
