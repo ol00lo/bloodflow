@@ -3,11 +3,12 @@
 \glsxtrnewsymbol[description={пространственная координата вдоль сосуда, [м]}]{x}{\ensuremath{x}}
 \glsxtrnewsymbol[description={время, [с]}]{t}{\ensuremath{t}}
 \glsxtrnewsymbol[description={площадь поперечного сечения сосуда в фиксированном сечении, [м\textsuperscript{2}]}]{a}{\ensuremath{a}}
+\glsxtrnewsymbol[description={$=\sqrt{a/\pi}$, радиус сосуда, [м]}]{R}{\ensuremath{R}}
 \glsxtrnewsymbol[description={средняя по поперечному сечению сосуда скорость жидкости, [м/с]}]{u}{\ensuremath{u}}
 \glsxtrnewsymbol[description={среднее по поперечному сечению сосуда давление, [Па]}]{p}{\ensuremath{p}}
 \glsxtrnewsymbol[description={плотность жидкости, [кг/м\textsuperscript{3}]}]{rho}{\ensuremath{\rho}}
 \glsxtrnewsymbol[description={динамическая вязкость жидкость, [Па$\cdot$c]}]{mu}{\ensuremath{\mu}}
-\glsxtrnewsymbol[description={нормированная на общий радиус $R=\sqrt{a/\pi}$ радиальная координата сосуда, [1]}]{r_prime}{\ensuremath{r'}}
+\glsxtrnewsymbol[description={нормированная на общий радиус $R$ радиальная координата сосуда, [1]}]{r_prime}{\ensuremath{r'}}
 \glsxtrnewsymbol[description={нормированный профиль скорости, [1]}]{U}{\ensuremath{U}}
 \glsxtrnewsymbol[description={параметр, описывающий радиально-симметричный профиль скорости, [1]}]{zeta}{\ensuremath{\zeta}}
 \glsxtrnewsymbol[description={параметр, описывающий эластичные свойства материала стенки сосуда, [кг/с\textsuperscript{2}]}]{beta}{\ensuremath{\beta}}
@@ -143,7 +144,7 @@ w_n = v_n - u_n.
 \end{equation}
 Тогда этот интеграл будет равен нулю.
 Для величин в левой части введём обозначения:
-$\gls{a} = |S|$ -- площадь поперечного сечения сосуда,
+$\gls{a} = |S|$ -- площадь поперечного сечения сосуда, равная $a = \pi \gls{R}^2$.
 $\gls{u} = \bar u_x$ -- средняя по сечению продольная скорость жидкости.
 Тогда закон сохранения масс примет вид
 \begin{equation}
